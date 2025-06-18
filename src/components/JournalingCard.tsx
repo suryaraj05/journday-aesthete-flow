@@ -28,13 +28,18 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load existing entry if any
     loadEntry();
   }, [session.id]);
+
+  useEffect(() => {
+    const words = entry.trim().split(/\s+/).filter(word => word.length > 0);
+    setWordCount(words.length);
+  }, [entry]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -45,8 +50,8 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
     } else if (timeLeft === 0) {
       setIsTimerActive(false);
       toast({
-        title: "Time's up!",
-        description: "Your 5-minute focus session is complete.",
+        title: "Sacred time complete! 🙏",
+        description: "Your 5-minute mindful session has concluded. Take a moment to appreciate your practice.",
       });
     }
     return () => {
@@ -63,7 +68,8 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
       const entrySnap = await getDoc(entryRef);
       
       if (entrySnap.exists()) {
-        setEntry(entrySnap.data().content || '');
+        const content = entrySnap.data().content || '';
+        setEntry(content);
       }
     } catch (error) {
       console.error('Error loading entry:', error);
@@ -85,20 +91,21 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
         content: entry,
         date: today,
         timestamp: new Date(),
-        prompt: session.prompt
+        prompt: session.prompt,
+        wordCount: wordCount
       });
 
       toast({
-        title: "Entry saved!",
-        description: "Your reflection has been captured.",
+        title: "Sacred words preserved! 🪷",
+        description: "Your reflection has been lovingly captured in your digital sanctuary.",
       });
       
       onBack();
     } catch (error) {
       console.error('Error saving entry:', error);
       toast({
-        title: "Error",
-        description: "Failed to save your entry. Please try again.",
+        title: "Challenge in preservation",
+        description: "Unable to save your sacred words. Please try again in a moment.",
         variant: "destructive",
       });
     } finally {
@@ -120,25 +127,30 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
 
   if (isFocusMode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
+      <div className="min-h-screen focus-mode-bg relative overflow-hidden">
+        {/* Focus Mode Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 backdrop-blur-sm"></div>
+        
+        {/* Meditation Ripples for Focus */}
+        <div className="meditation-ripples"></div>
+        
         <div className="relative z-10 container mx-auto px-6 py-16">
           {/* Timer */}
           <div className="text-center mb-8">
-            <div className="glassmorphic inline-block px-8 py-4 rounded-full mb-4">
+            <div className="glassmorphic inline-block px-8 py-4 rounded-full mb-4 pulse-glow-animation">
               <span className="text-3xl font-mono text-gray-700">
                 {formatTime(timeLeft)}
               </span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">{session.title}</h2>
-            <p className="text-gray-600">Focus Mode</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2 float-animation">{session.title}</h2>
+            <p className="text-gray-600">🧘‍♀️ Sacred Focus Mode - Let your thoughts flow freely</p>
           </div>
 
           {/* Prompt */}
           <div className="max-w-2xl mx-auto mb-8">
-            <div className="card-neumorphic p-6 text-center">
+            <div className="card-neumorphic p-6 text-center float-animation">
               <span className="text-4xl mb-4 block">{session.icon}</span>
-              <p className="text-lg text-gray-700 font-medium">{session.prompt}</p>
+              <p className="text-lg text-gray-700 font-medium italic">"{session.prompt}"</p>
             </div>
           </div>
 
@@ -147,23 +159,27 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
             <Textarea
               value={entry}
               onChange={(e) => setEntry(e.target.value)}
-              placeholder="Let your thoughts flow..."
-              className="min-h-[300px] glassmorphic border-0 text-lg leading-relaxed resize-none focus:ring-2 focus:ring-purple-300"
+              placeholder="Let your sacred thoughts flow onto this digital parchment..."
+              className="min-h-[300px] glassmorphic border-0 text-lg leading-relaxed resize-none focus:ring-2 focus:ring-purple-300 transition-all"
             />
             
             <div className="flex justify-center space-x-4 mt-6">
               <Button
                 onClick={() => setIsTimerActive(!isTimerActive)}
-                className="button-neumorphic text-gray-800 hover:text-gray-900"
+                className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
               >
-                {isTimerActive ? 'Pause' : 'Resume'}
+                {isTimerActive ? '⏸️ Pause' : '▶️ Resume'}
               </Button>
               <Button
                 onClick={() => setIsFocusMode(false)}
-                className="button-neumorphic text-gray-800 hover:text-gray-900"
+                className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
               >
-                Exit Focus
+                🌅 Exit Focus
               </Button>
+            </div>
+            
+            <div className="text-center mt-4">
+              <span className="text-sm text-gray-500">{wordCount} words written</span>
             </div>
           </div>
         </div>
@@ -173,10 +189,19 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
 
   return (
     <div className="min-h-screen ayurvedic-gradient lotus-pattern relative overflow-hidden">
+      {/* Enhanced Background Elements */}
+      <div className="floating-orbs">
+        <div className="floating-orb"></div>
+        <div className="floating-orb"></div>
+        <div className="floating-orb"></div>
+      </div>
+
+      <div className="sacred-geometry"></div>
+
       {/* Floating decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl float-animation"></div>
-        <div className="absolute bottom-20 right-10 w-24 h-24 bg-purple-200/20 rounded-full blur-lg float-animation" style={{animationDelay: '1.5s'}}></div>
+        <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl float-animation shimmer-animation"></div>
+        <div className="absolute bottom-20 right-10 w-24 h-24 bg-purple-200/20 rounded-full blur-lg float-animation drift-animation" style={{animationDelay: '1.5s'}}></div>
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-8">
@@ -184,29 +209,29 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
         <header className="flex justify-between items-center mb-8">
           <button 
             onClick={onBack}
-            className="button-neumorphic p-3 rounded-full"
+            className="button-neumorphic p-3 rounded-full hover:scale-105 transition-transform"
           >
             <span className="text-xl">←</span>
           </button>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-800">{session.title}</h1>
-            <p className="text-sm text-gray-600">{session.time}</p>
+            <h1 className="text-2xl font-bold text-gray-800 float-animation">{session.title}</h1>
+            <p className="text-sm text-gray-600">{session.time} • Sacred Reflection</p>
           </div>
           <Button
             onClick={startFocusMode}
-            className="button-neumorphic text-gray-800 hover:text-gray-900 text-sm px-4 py-2"
+            className="button-neumorphic text-gray-800 hover:text-gray-900 text-sm px-4 py-2 hover:scale-105 transition-transform"
           >
-            Focus Mode
+            🧘‍♀️ Focus Mode
           </Button>
         </header>
 
         {/* Session Info */}
         <div className="max-w-2xl mx-auto mb-8">
-          <div className="card-neumorphic p-6 text-center">
-            <div className={`w-20 h-20 bg-gradient-to-br ${session.color} rounded-3xl flex items-center justify-center mx-auto mb-4`}>
+          <div className="card-neumorphic p-6 text-center float-animation">
+            <div className={`w-20 h-20 bg-gradient-to-br ${session.color} rounded-3xl flex items-center justify-center mx-auto mb-4 pulse-glow-animation`}>
               <span className="text-3xl">{session.icon}</span>
             </div>
-            <p className="text-lg text-gray-700 font-medium mb-2">{session.prompt}</p>
+            <p className="text-lg text-gray-700 font-medium mb-2 italic">"{session.prompt}"</p>
             <p className="text-sm text-gray-500">{session.description}</p>
           </div>
         </div>
@@ -217,20 +242,27 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
             <Textarea
               value={entry}
               onChange={(e) => setEntry(e.target.value)}
-              placeholder="Begin writing your thoughts..."
-              className="min-h-[300px] glassmorphic border-0 text-lg leading-relaxed resize-none focus:ring-2 focus:ring-purple-300"
+              placeholder="Begin writing your sacred thoughts... Let wisdom flow through your fingertips."
+              className="min-h-[300px] glassmorphic border-0 text-lg leading-relaxed resize-none focus:ring-2 focus:ring-purple-300 transition-all"
             />
             
             <div className="flex justify-between items-center mt-6">
               <div className="text-sm text-gray-500">
-                {entry.length} characters
+                {entry.length} characters • {wordCount} words
               </div>
               <Button
                 onClick={saveEntry}
                 disabled={loading || !entry.trim()}
-                className="button-neumorphic text-gray-800 hover:text-gray-900 px-8"
+                className="button-neumorphic text-gray-800 hover:text-gray-900 px-8 hover:scale-105 transition-transform"
               >
-                {loading ? 'Saving...' : 'Save Entry'}
+                {loading ? (
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Preserving...
+                  </div>
+                ) : (
+                  '🪷 Preserve Entry'
+                )}
               </Button>
             </div>
           </div>
@@ -238,7 +270,7 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
 
         {/* Ayurvedic Encouragement */}
         <div className="max-w-2xl mx-auto mt-8">
-          <div className="glassmorphic p-4 rounded-lg text-center">
+          <div className="glassmorphic p-4 rounded-lg text-center shimmer-animation">
             <p className="text-sm text-gray-600 italic">
               "In the depth of winter, I finally learned that there was in me an invincible summer." - Albert Camus
             </p>

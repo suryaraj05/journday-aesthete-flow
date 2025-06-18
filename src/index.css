@@ -100,6 +100,28 @@
     rgba(147, 197, 253, 0.6) 50%,
     rgba(196, 181, 253, 0.7) 75%,
     rgba(255, 228, 230, 0.8) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.ayurvedic-gradient::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(255, 183, 197, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(196, 181, 253, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(147, 197, 253, 0.3) 0%, transparent 50%);
+  animation: breathe 8s ease-in-out infinite;
+  z-index: 1;
+}
+
+.ayurvedic-gradient > * {
+  position: relative;
+  z-index: 2;
 }
 
 .neumorphic {
@@ -162,15 +184,200 @@
     inset -4px -4px 8px rgba(255, 255, 255, 0.7);
 }
 
+/* Beautiful Background Animations */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-15px) rotate(1deg); }
+  66% { transform: translateY(-5px) rotate(-1deg); }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes drift {
+  0% { transform: translateX(0px) translateY(0px) rotate(0deg); }
+  33% { transform: translateX(30px) translateY(-30px) rotate(120deg); }
+  66% { transform: translateX(-20px) translateY(20px) rotate(240deg); }
+  100% { transform: translateX(0px) translateY(0px) rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.3; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(196, 181, 253, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(196, 181, 253, 0.6), 0 0 60px rgba(196, 181, 253, 0.3); }
 }
 
 .float-animation {
-  animation: float 3s ease-in-out infinite;
+  animation: float 6s ease-in-out infinite;
+}
+
+.drift-animation {
+  animation: drift 20s linear infinite;
+}
+
+.shimmer-animation {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.pulse-glow-animation {
+  animation: pulse-glow 4s ease-in-out infinite;
 }
 
 .lotus-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10zm10 0c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10z'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 60px 60px, 40px 40px;
+  animation: lotus-drift 30s linear infinite;
+}
+
+@keyframes lotus-drift {
+  0% { background-position: 0% 0%, 0% 0%; }
+  100% { background-position: 100% 100%, -100% -100%; }
+}
+
+/* Floating Orbs */
+.floating-orbs {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.floating-orb {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(10px);
+  animation: float 8s ease-in-out infinite;
+}
+
+.floating-orb:nth-child(1) {
+  width: 120px;
+  height: 120px;
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 8s;
+}
+
+.floating-orb:nth-child(2) {
+  width: 80px;
+  height: 80px;
+  top: 60%;
+  right: 15%;
+  animation-delay: 2s;
+  animation-duration: 12s;
+}
+
+.floating-orb:nth-child(3) {
+  width: 60px;
+  height: 60px;
+  bottom: 20%;
+  left: 30%;
+  animation-delay: 4s;
+  animation-duration: 10s;
+}
+
+.floating-orb:nth-child(4) {
+  width: 40px;
+  height: 40px;
+  top: 30%;
+  right: 40%;
+  animation-delay: 6s;
+  animation-duration: 14s;
+}
+
+/* Sacred Geometry Patterns */
+.sacred-geometry {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.1;
+  background-image: 
+    radial-gradient(circle at 50% 50%, transparent 40%, rgba(196, 181, 253, 0.1) 41%, rgba(196, 181, 253, 0.1) 45%, transparent 46%);
+  background-size: 200px 200px;
+  animation: sacred-rotation 60s linear infinite;
+}
+
+@keyframes sacred-rotation {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Meditation ripples */
+.meditation-ripples {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  margin: -150px 0 0 -150px;
+  opacity: 0.1;
+}
+
+.meditation-ripples::before,
+.meditation-ripples::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid rgba(196, 181, 253, 0.3);
+  border-radius: 50%;
+  animation: ripple 4s linear infinite;
+}
+
+.meditation-ripples::after {
+  animation-delay: 2s;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Enhanced animations for active states */
+.active-session {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.focus-mode-bg {
+  background: linear-gradient(135deg, 
+    rgba(67, 56, 202, 0.1) 0%, 
+    rgba(99, 102, 241, 0.1) 50%,
+    rgba(139, 92, 246, 0.1) 100%);
+}
+
+.focus-mode-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(67, 56, 202, 0.05) 0%, transparent 70%);
+  animation: focus-breathe 6s ease-in-out infinite;
+}
+
+@keyframes focus-breathe {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.02); }
 }

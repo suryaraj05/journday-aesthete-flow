@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import JournalingCard from './JournalingCard';
 import AyurvedicTip from './AyurvedicTip';
 import JournalReflection from './JournalReflection';
+import AISettings from './AISettings';
+import AIInsights from './AIInsights';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { BookOpen, BarChart3 } from 'lucide-react';
@@ -61,6 +63,7 @@ const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [showReflection, setShowReflection] = useState(false);
+  const [openaiApiKey, setOpenaiApiKey] = useState<string>('');
   const [analytics, setAnalytics] = useState({
     totalEntries: 0,
     currentStreak: 0,
@@ -74,6 +77,13 @@ const Dashboard = () => {
     }, 60000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const savedKey = localStorage.getItem('journday_openai_key');
+    if (savedKey) {
+      setOpenaiApiKey(savedKey);
+    }
   }, []);
 
   useEffect(() => {
@@ -168,6 +178,10 @@ const Dashboard = () => {
     }
   };
 
+  const handleApiKeySet = (apiKey: string) => {
+    setOpenaiApiKey(apiKey);
+  };
+
   if (showReflection) {
     return <JournalReflection onBack={() => setShowReflection(false)} />;
   }
@@ -182,6 +196,7 @@ const Dashboard = () => {
           setSelectedSession(null);
           fetchAnalytics(); // Refresh analytics after saving
         }}
+        apiKey={openaiApiKey}
       />
     );
   }
@@ -218,6 +233,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
+            <AISettings onApiKeySet={handleApiKeySet} currentApiKey={openaiApiKey} />
             <Button
               onClick={() => setShowReflection(true)}
               className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
@@ -233,6 +249,9 @@ const Dashboard = () => {
             </Button>
           </div>
         </header>
+
+        {/* AI Insights */}
+        <AIInsights apiKey={openaiApiKey} />
 
         {/* Ayurvedic Tip */}
         <AyurvedicTip />

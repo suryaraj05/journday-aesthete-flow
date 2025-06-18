@@ -4,7 +4,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { ChevronLeft, Timer, Pause, Play, Save, Focus } from 'lucide-react';
+import { ChevronLeft, Timer, Pause, Play, Save, Focus, Sparkles } from 'lucide-react';
+import AIWritingAssistant from './AIWritingAssistant';
+import { AIService } from '@/services/aiService';
 
 interface Session {
   id: string;
@@ -20,17 +22,20 @@ interface JournalingCardProps {
   session: Session;
   onBack: () => void;
   onSave?: () => void;
+  apiKey?: string;
 }
 
-const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
+const JournalingCard = ({ session, onBack, onSave, apiKey }: JournalingCardProps) => {
   const { user } = useAuth();
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(5 * 60); // 5 minutes
+  const [timerSeconds, setTimerSeconds] = useState(5 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [hasExistingEntry, setHasExistingEntry] = useState(false);
   const [existingEntryId, setExistingEntryId] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [sentimentAnalysis, setSentimentAnalysis] = useState<any>(null);
 
   useEffect(() => {
     loadExistingEntry();
@@ -89,6 +94,44 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
     } else {
       setIsTimerRunning(false);
     }
+  };
+
+  useEffect(() => {
+    if (apiKey && content.length > 100) {
+      analyzeSentiment();
+    }
+  }, [content, apiKey]);
+
+  const analyzeSentiment = async () => {
+    if (!apiKey) return;
+
+    try {
+      const aiService = new AIService(apiKey);
+      const analysis = await aiService.analyzeSentiment(content);
+      setSentimentAnalysis(analysis);
+    } catch (error) {
+      console.error('Error analyzing sentiment:', error);
+    }
+  };
+
+  const generateAIPrompt = async () => {
+    if (!apiKey) return;
+
+    try {
+      const aiService = new AIService(apiKey);
+      const suggestion = await aiService.generatePersonalizedPrompt(
+        session.id,
+        [content],
+        new Date().toLocaleTimeString()
+      );
+      setAiPrompt(suggestion.prompt);
+    } catch (error) {
+      console.error('Error generating AI prompt:', error);
+    }
+  };
+
+  const handleSuggestionSelect = (suggestion: string) => {
+    setContent(prev => prev + '\n\n' + suggestion);
   };
 
   const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
@@ -163,8 +206,38 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
 
             <div className="card-neumorphic p-8">
               <div className="mb-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{session.title}</h3>
-                <p className="text-gray-600 italic">"{session.prompt}"</p>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-gray-800">{session.title}</h3>
+                  {apiKey && (
+                    <Button
+                      onClick={generateAIPrompt}
+                      className="button-neumorphic text-gray-800 hover:text-gray-900"
+                      size="sm"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      AI Prompt
+                    </Button>
+                  )}
+                </div>
+                <p className="text-gray-600 italic">"{aiPrompt || session.prompt}"</p>
+                
+                {sentimentAnalysis && (
+                  <div className="mt-4 glassmorphic p-3 rounded-lg">
+                    <div className="flex items-center space-x-2 text-sm">
+                      <span className="text-gray-600">Mood:</span>
+                      <span className={`font-medium ${
+                        sentimentAnalysis.sentiment === 'positive' ? 'text-green-600' :
+                        sentimentAnalysis.sentiment === 'negative' ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {sentimentAnalysis.sentiment}
+                      </span>
+                      <span className="text-gray-600">|</span>
+                      <span className="text-gray-600">
+                        {sentimentAnalysis.emotions.slice(0, 2).join(', ')}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Textarea
@@ -173,6 +246,13 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
                 placeholder="Let your thoughts flow freely..."
                 className="min-h-[400px] text-lg leading-relaxed border-none bg-transparent resize-none focus:ring-0 focus:outline-none"
                 autoFocus
+              />
+
+              <AIWritingAssistant
+                content={content}
+                sessionType={session.id}
+                apiKey={apiKey}
+                onSuggestionSelect={handleSuggestionSelect}
               />
 
               <div className="flex justify-between items-center mt-6">
@@ -244,10 +324,42 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
 
           <div className="card-neumorphic p-8 mb-6">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">Reflection Prompt</h2>
-              <div className="glassmorphic p-4 rounded-lg">
-                <p className="text-gray-700 italic">"{session.prompt}"</p>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-semibold text-gray-800">Reflection Prompt</h2>
+                {apiKey && (
+                  <Button
+                    onClick={generateAIPrompt}
+                    className="button-neumorphic text-gray-800 hover:text-gray-900"
+                    size="sm"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    AI Prompt
+                  </Button>
+                )}
               </div>
+              <div className="glassmorphic p-4 rounded-lg">
+                <p className="text-gray-700 italic">"{aiPrompt || session.prompt}"</p>
+              </div>
+              
+              {sentimentAnalysis && (
+                <div className="mt-4 glassmorphic p-3 rounded-lg">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-600">Current mood:</span>
+                      <span className={`font-medium ${
+                        sentimentAnalysis.sentiment === 'positive' ? 'text-green-600' :
+                        sentimentAnalysis.sentiment === 'negative' ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {sentimentAnalysis.sentiment}
+                      </span>
+                    </div>
+                    <span className="text-gray-600">
+                      {sentimentAnalysis.emotions.slice(0, 2).join(', ')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{sentimentAnalysis.summary}</p>
+                </div>
+              )}
             </div>
 
             <div className="mb-6">
@@ -261,6 +373,13 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
                 className="min-h-[300px] text-base leading-relaxed"
               />
             </div>
+
+            <AIWritingAssistant
+              content={content}
+              sessionType={session.id}
+              apiKey={apiKey}
+              onSuggestionSelect={handleSuggestionSelect}
+            />
 
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-500">

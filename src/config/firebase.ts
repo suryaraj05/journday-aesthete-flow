@@ -1,7 +1,7 @@
 
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAK74AzvmkX6IhAcK6iW4GBUSLko0TM4kY",
@@ -20,5 +20,9 @@ export const auth = getAuth(app);
 
 // Initialize Cloud Firestore and get a reference to the service
 export const db = getFirestore(app);
+
+// Note: The OAuth error is because the current domain is not authorized.
+// We're using email/password authentication which doesn't require OAuth setup.
+// For production, add your domain to Firebase Console -> Authentication -> Settings -> Authorized domains
 
 export default app;

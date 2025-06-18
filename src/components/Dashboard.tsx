@@ -1,9 +1,12 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import JournalingCard from './JournalingCard';
 import AyurvedicTip from './AyurvedicTip';
+import JournalReflection from './JournalReflection';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '@/config/firebase';
+import { BookOpen, BarChart3 } from 'lucide-react';
 
 const journalingSessions = [
   {
@@ -57,14 +60,78 @@ const Dashboard = () => {
   const { user, logout } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [showReflection, setShowReflection] = useState(false);
+  const [analytics, setAnalytics] = useState({
+    totalEntries: 0,
+    currentStreak: 0,
+    completedDays: 0,
+    consistencyRate: 0
+  });
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Update every minute
+    }, 60000);
 
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchAnalytics();
+    }
+  }, [user]);
+
+  const fetchAnalytics = async () => {
+    if (!user) return;
+
+    try {
+      const entriesRef = collection(db, 'journalEntries');
+      const q = query(
+        entriesRef,
+        where('userId', '==', user.uid),
+        orderBy('timestamp', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const entries: any[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        entries.push({ id: doc.id, ...doc.data() });
+      });
+
+      const totalEntries = entries.length;
+      const uniqueDays = new Set(entries.map(entry => entry.date)).size;
+      
+      // Calculate streak
+      const today = new Date().toISOString().split('T')[0];
+      const uniqueDates = [...new Set(entries.map(entry => entry.date))].sort().reverse();
+      
+      let streak = 0;
+      let currentDate = new Date(today);
+      
+      for (const date of uniqueDates) {
+        const entryDate = currentDate.toISOString().split('T')[0];
+        if (date === entryDate) {
+          streak++;
+          currentDate.setDate(currentDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
+      const consistencyRate = uniqueDays > 0 ? Math.round((streak / uniqueDays) * 100) : 0;
+
+      setAnalytics({
+        totalEntries,
+        currentStreak: streak,
+        completedDays: uniqueDays,
+        consistencyRate
+      });
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
 
   const getCurrentHour = () => {
     return currentTime.getHours();
@@ -101,12 +168,20 @@ const Dashboard = () => {
     }
   };
 
+  if (showReflection) {
+    return <JournalReflection onBack={() => setShowReflection(false)} />;
+  }
+
   if (selectedSession) {
     const session = journalingSessions.find(s => s.id === selectedSession);
     return (
       <JournalingCard
         session={session!}
         onBack={() => setSelectedSession(null)}
+        onSave={() => {
+          setSelectedSession(null);
+          fetchAnalytics(); // Refresh analytics after saving
+        }}
       />
     );
   }
@@ -142,12 +217,21 @@ const Dashboard = () => {
               <p className="text-sm text-gray-600">{getGreeting()}, {user?.email?.split('@')[0]}</p>
             </div>
           </div>
-          <Button
-            onClick={handleLogout}
-            className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
-          >
-            Sign Out
-          </Button>
+          <div className="flex items-center space-x-3">
+            <Button
+              onClick={() => setShowReflection(true)}
+              className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Reflections
+            </Button>
+            <Button
+              onClick={handleLogout}
+              className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
+            >
+              Sign Out
+            </Button>
+          </div>
         </header>
 
         {/* Ayurvedic Tip */}
@@ -205,24 +289,28 @@ const Dashboard = () => {
           })}
         </div>
 
-        {/* Analytics Preview */}
+        {/* Enhanced Analytics Preview */}
         <div className="mt-12 max-w-2xl mx-auto">
           <div className="card-neumorphic p-6 float-animation" style={{animationDelay: '0.5s'}}>
             <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="mr-2">📊</span>
+              <BarChart3 className="w-5 h-5 mr-2" />
               Your Sacred Journey
             </h3>
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div className="p-4 glassmorphic rounded-lg">
-                <div className="text-2xl font-bold text-purple-600 mb-1">7</div>
-                <div className="text-sm text-gray-600">Days Active</div>
+                <div className="text-2xl font-bold text-purple-600 mb-1">{analytics.currentStreak}</div>
+                <div className="text-sm text-gray-600">Day Streak</div>
               </div>
               <div className="p-4 glassmorphic rounded-lg">
-                <div className="text-2xl font-bold text-blue-600 mb-1">23</div>
-                <div className="text-sm text-gray-600">Sessions</div>
+                <div className="text-2xl font-bold text-blue-600 mb-1">{analytics.totalEntries}</div>
+                <div className="text-sm text-gray-600">Total Entries</div>
               </div>
               <div className="p-4 glassmorphic rounded-lg">
-                <div className="text-2xl font-bold text-green-600 mb-1">85%</div>
+                <div className="text-2xl font-bold text-green-600 mb-1">{analytics.completedDays}</div>
+                <div className="text-sm text-gray-600">Active Days</div>
+              </div>
+              <div className="p-4 glassmorphic rounded-lg">
+                <div className="text-2xl font-bold text-orange-600 mb-1">{analytics.consistencyRate}%</div>
                 <div className="text-sm text-gray-600">Consistency</div>
               </div>
             </div>

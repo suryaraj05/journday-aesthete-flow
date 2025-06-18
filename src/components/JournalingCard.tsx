@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '@/config/firebase';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '@/config/firebase';
+import { ChevronLeft, Timer, Pause, Play, Save, Focus } from 'lucide-react';
 
 interface Session {
   id: string;
@@ -20,166 +19,175 @@ interface Session {
 interface JournalingCardProps {
   session: Session;
   onBack: () => void;
+  onSave?: () => void;
 }
 
-const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
-  const [entry, setEntry] = useState('');
-  const [isFocusMode, setIsFocusMode] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
-  const [isTimerActive, setIsTimerActive] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
+const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const [content, setContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(5 * 60); // 5 minutes
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [hasExistingEntry, setHasExistingEntry] = useState(false);
+  const [existingEntryId, setExistingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadEntry();
-  }, [session.id]);
+    loadExistingEntry();
+  }, [session.id, user]);
 
   useEffect(() => {
-    const words = entry.trim().split(/\s+/).filter(word => word.length > 0);
-    setWordCount(words.length);
-  }, [entry]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isTimerActive && timeLeft > 0) {
+    let interval: NodeJS.Timeout;
+    if (isTimerRunning && timerSeconds > 0) {
       interval = setInterval(() => {
-        setTimeLeft(timeLeft - 1);
+        setTimerSeconds(prev => prev - 1);
       }, 1000);
-    } else if (timeLeft === 0) {
-      setIsTimerActive(false);
-      toast({
-        title: "Sacred time complete! 🙏",
-        description: "Your 5-minute mindful session has concluded. Take a moment to appreciate your practice.",
-      });
+    } else if (timerSeconds === 0) {
+      setIsTimerRunning(false);
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isTimerActive, timeLeft, toast]);
+    return () => clearInterval(interval);
+  }, [isTimerRunning, timerSeconds]);
 
-  const loadEntry = async () => {
+  const loadExistingEntry = async () => {
     if (!user) return;
-    
+
     try {
       const today = new Date().toISOString().split('T')[0];
-      const entryRef = doc(db, 'entries', `${user.uid}_${session.id}_${today}`);
+      const entryId = `${user.uid}_${session.id}_${today}`;
+      const entryRef = doc(db, 'journalEntries', entryId);
       const entrySnap = await getDoc(entryRef);
-      
+
       if (entrySnap.exists()) {
-        const content = entrySnap.data().content || '';
-        setEntry(content);
+        const data = entrySnap.data();
+        setContent(data.content || '');
+        setHasExistingEntry(true);
+        setExistingEntryId(entryId);
       }
     } catch (error) {
-      console.error('Error loading entry:', error);
+      console.error('Error loading existing entry:', error);
     }
-  };
-
-  const saveEntry = async () => {
-    if (!user || !entry.trim()) return;
-    
-    setLoading(true);
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const entryRef = doc(db, 'entries', `${user.uid}_${session.id}_${today}`);
-      
-      await setDoc(entryRef, {
-        userId: user.uid,
-        sessionId: session.id,
-        sessionTitle: session.title,
-        content: entry,
-        date: today,
-        timestamp: new Date(),
-        prompt: session.prompt,
-        wordCount: wordCount
-      });
-
-      toast({
-        title: "Sacred words preserved! 🪷",
-        description: "Your reflection has been lovingly captured in your digital sanctuary.",
-      });
-      
-      onBack();
-    } catch (error) {
-      console.error('Error saving entry:', error);
-      toast({
-        title: "Challenge in preservation",
-        description: "Unable to save your sacred words. Please try again in a moment.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startFocusMode = () => {
-    setIsFocusMode(true);
-    setIsTimerActive(true);
-    setTimeLeft(300);
   };
 
   const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const toggleTimer = () => {
+    if (!isTimerRunning && timerSeconds === 0) {
+      setTimerSeconds(5 * 60);
+    }
+    setIsTimerRunning(!isTimerRunning);
+  };
+
+  const toggleFocusMode = () => {
+    setIsFocusMode(!isFocusMode);
+    if (!isFocusMode) {
+      setTimerSeconds(5 * 60);
+      setIsTimerRunning(true);
+    } else {
+      setIsTimerRunning(false);
+    }
+  };
+
+  const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+  const characterCount = content.length;
+
+  const handleSave = async () => {
+    if (!user || !content.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const entryData = {
+        userId: user.uid,
+        sessionId: session.id,
+        content: content.trim(),
+        date: today,
+        timestamp: new Date(),
+        wordCount: wordCount,
+        characterCount: characterCount
+      };
+
+      if (hasExistingEntry && existingEntryId) {
+        await updateDoc(doc(db, 'journalEntries', existingEntryId), entryData);
+      } else {
+        const entryId = `${user.uid}_${session.id}_${today}`;
+        await addDoc(collection(db, 'journalEntries'), {
+          ...entryData,
+          id: entryId
+        });
+      }
+
+      console.log('Entry saved successfully');
+      onSave?.(); // Call the onSave callback to refresh analytics
+      onBack();
+    } catch (error) {
+      console.error('Error saving entry:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isFocusMode) {
     return (
       <div className="min-h-screen focus-mode-bg relative overflow-hidden">
-        {/* Focus Mode Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-purple-50/50"></div>
         
-        {/* Meditation Ripples for Focus */}
-        <div className="meditation-ripples"></div>
-        
-        <div className="relative z-10 container mx-auto px-6 py-16">
-          {/* Timer */}
-          <div className="text-center mb-8">
-            <div className="glassmorphic inline-block px-8 py-4 rounded-full mb-4 pulse-glow-animation">
-              <span className="text-3xl font-mono text-gray-700">
-                {formatTime(timeLeft)}
-              </span>
+        <div className="relative z-10 container mx-auto px-6 py-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center space-x-4">
+                <Button
+                  onClick={toggleFocusMode}
+                  className="button-neumorphic text-gray-800 hover:text-gray-900 p-2"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <h2 className="text-2xl font-bold text-gray-800">Focus Mode</h2>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="glassmorphic px-4 py-2 rounded-lg">
+                  <span className="text-lg font-mono text-gray-700">{formatTime(timerSeconds)}</span>
+                </div>
+                <Button
+                  onClick={toggleTimer}
+                  className="button-neumorphic text-gray-800 hover:text-gray-900 p-2"
+                >
+                  {isTimerRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                </Button>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2 float-animation">{session.title}</h2>
-            <p className="text-gray-600">🧘‍♀️ Sacred Focus Mode - Let your thoughts flow freely</p>
-          </div>
 
-          {/* Prompt */}
-          <div className="max-w-2xl mx-auto mb-8">
-            <div className="card-neumorphic p-6 text-center float-animation">
-              <span className="text-4xl mb-4 block">{session.icon}</span>
-              <p className="text-lg text-gray-700 font-medium italic">"{session.prompt}"</p>
-            </div>
-          </div>
+            <div className="card-neumorphic p-8">
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{session.title}</h3>
+                <p className="text-gray-600 italic">"{session.prompt}"</p>
+              </div>
 
-          {/* Writing Area */}
-          <div className="max-w-2xl mx-auto">
-            <Textarea
-              value={entry}
-              onChange={(e) => setEntry(e.target.value)}
-              placeholder="Let your sacred thoughts flow onto this digital parchment..."
-              className="min-h-[300px] glassmorphic border-0 text-lg leading-relaxed resize-none focus:ring-2 focus:ring-purple-300 transition-all"
-            />
-            
-            <div className="flex justify-center space-x-4 mt-6">
-              <Button
-                onClick={() => setIsTimerActive(!isTimerActive)}
-                className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
-              >
-                {isTimerActive ? '⏸️ Pause' : '▶️ Resume'}
-              </Button>
-              <Button
-                onClick={() => setIsFocusMode(false)}
-                className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
-              >
-                🌅 Exit Focus
-              </Button>
-            </div>
-            
-            <div className="text-center mt-4">
-              <span className="text-sm text-gray-500">{wordCount} words written</span>
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Let your thoughts flow freely..."
+                className="min-h-[400px] text-lg leading-relaxed border-none bg-transparent resize-none focus:ring-0 focus:outline-none"
+                autoFocus
+              />
+
+              <div className="flex justify-between items-center mt-6">
+                <div className="text-sm text-gray-500">
+                  {wordCount} words • {characterCount} characters
+                </div>
+                <Button
+                  onClick={handleSave}
+                  disabled={isLoading || !content.trim()}
+                  className="button-neumorphic text-gray-800 hover:text-gray-900 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {isLoading ? 'Saving...' : hasExistingEntry ? 'Update Entry' : 'Save Entry'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -189,8 +197,8 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
 
   return (
     <div className="min-h-screen ayurvedic-gradient lotus-pattern relative overflow-hidden">
-      {/* Enhanced Background Elements */}
       <div className="floating-orbs">
+        <div className="floating-orb"></div>
         <div className="floating-orb"></div>
         <div className="floating-orb"></div>
         <div className="floating-orb"></div>
@@ -198,82 +206,75 @@ const JournalingCard = ({ session, onBack }: JournalingCardProps) => {
 
       <div className="sacred-geometry"></div>
 
-      {/* Floating decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl float-animation shimmer-animation"></div>
-        <div className="absolute bottom-20 right-10 w-24 h-24 bg-purple-200/20 rounded-full blur-lg float-animation drift-animation" style={{animationDelay: '1.5s'}}></div>
-      </div>
-
       <div className="relative z-10 container mx-auto px-6 py-8">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-8">
-          <button 
-            onClick={onBack}
-            className="button-neumorphic p-3 rounded-full hover:scale-105 transition-transform"
-          >
-            <span className="text-xl">←</span>
-          </button>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-800 float-animation">{session.title}</h1>
-            <p className="text-sm text-gray-600">{session.time} • Sacred Reflection</p>
-          </div>
-          <Button
-            onClick={startFocusMode}
-            className="button-neumorphic text-gray-800 hover:text-gray-900 text-sm px-4 py-2 hover:scale-105 transition-transform"
-          >
-            🧘‍♀️ Focus Mode
-          </Button>
-        </header>
-
-        {/* Session Info */}
-        <div className="max-w-2xl mx-auto mb-8">
-          <div className="card-neumorphic p-6 text-center float-animation">
-            <div className={`w-20 h-20 bg-gradient-to-br ${session.color} rounded-3xl flex items-center justify-center mx-auto mb-4 pulse-glow-animation`}>
-              <span className="text-3xl">{session.icon}</span>
+        <div className="max-w-3xl mx-auto">
+          <header className="flex justify-between items-center mb-8">
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={onBack}
+                className="button-neumorphic text-gray-800 hover:text-gray-900 p-2"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex items-center space-x-3">
+                <div className={`w-12 h-12 bg-gradient-to-br ${session.color} rounded-3xl flex items-center justify-center pulse-glow-animation`}>
+                  <span className="text-2xl">{session.icon}</span>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-800">{session.title}</h1>
+                  <p className="text-sm text-gray-600">{session.time}</p>
+                </div>
+              </div>
             </div>
-            <p className="text-lg text-gray-700 font-medium mb-2 italic">"{session.prompt}"</p>
-            <p className="text-sm text-gray-500">{session.description}</p>
-          </div>
-        </div>
 
-        {/* Writing Area */}
-        <div className="max-w-2xl mx-auto">
-          <div className="card-neumorphic p-6">
-            <Textarea
-              value={entry}
-              onChange={(e) => setEntry(e.target.value)}
-              placeholder="Begin writing your sacred thoughts... Let wisdom flow through your fingertips."
-              className="min-h-[300px] glassmorphic border-0 text-lg leading-relaxed resize-none focus:ring-2 focus:ring-purple-300 transition-all"
-            />
-            
-            <div className="flex justify-between items-center mt-6">
+            <div className="flex items-center space-x-3">
+              <Button
+                onClick={toggleFocusMode}
+                className="button-neumorphic text-gray-800 hover:text-gray-900"
+              >
+                <Focus className="w-4 h-4 mr-2" />
+                Focus Mode
+              </Button>
+              <div className="glassmorphic px-4 py-2 rounded-lg">
+                <Timer className="w-4 h-4 inline mr-2" />
+                <span className="text-sm font-mono">{formatTime(timerSeconds)}</span>
+              </div>
+            </div>
+          </header>
+
+          <div className="card-neumorphic p-8 mb-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-3">Reflection Prompt</h2>
+              <div className="glassmorphic p-4 rounded-lg">
+                <p className="text-gray-700 italic">"{session.prompt}"</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Your Reflection
+              </label>
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Take a moment to reflect and write your thoughts..."
+                className="min-h-[300px] text-base leading-relaxed"
+              />
+            </div>
+
+            <div className="flex justify-between items-center">
               <div className="text-sm text-gray-500">
-                {entry.length} characters • {wordCount} words
+                {wordCount} words • {characterCount} characters
               </div>
               <Button
-                onClick={saveEntry}
-                disabled={loading || !entry.trim()}
-                className="button-neumorphic text-gray-800 hover:text-gray-900 px-8 hover:scale-105 transition-transform"
+                onClick={handleSave}
+                disabled={isLoading || !content.trim()}
+                className="button-neumorphic text-gray-800 hover:text-gray-900 disabled:opacity-50"
               >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Preserving...
-                  </div>
-                ) : (
-                  '🪷 Preserve Entry'
-                )}
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? 'Saving...' : hasExistingEntry ? 'Update Entry' : 'Save Entry'}
               </Button>
             </div>
-          </div>
-        </div>
-
-        {/* Ayurvedic Encouragement */}
-        <div className="max-w-2xl mx-auto mt-8">
-          <div className="glassmorphic p-4 rounded-lg text-center shimmer-animation">
-            <p className="text-sm text-gray-600 italic">
-              "In the depth of winter, I finally learned that there was in me an invincible summer." - Albert Camus
-            </p>
           </div>
         </div>
       </div>

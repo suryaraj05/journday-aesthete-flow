@@ -117,17 +117,6 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
             Begin Your Sacred Journey
           </Button>
         </div>
-
-        {/* Floating Navigation */}
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 glassmorphic px-8 py-4 rounded-full shimmer-animation">
-          <div className="flex items-center space-x-8">
-            <span className="w-8 h-8 text-gray-400 transition-colors hover:text-gray-600">🌱</span>
-            <span className="w-8 h-8 text-gray-400 transition-colors hover:text-gray-600">📊</span>
-            <span className="w-8 h-8 text-gray-600">📖</span>
-            <span className="w-8 h-8 text-gray-400 transition-colors hover:text-gray-600">👤</span>
-            <span className="w-8 h-8 text-gray-400 transition-colors hover:text-gray-600">⚙️</span>
-          </div>
-        </div>
       </div>
     </div>
   );

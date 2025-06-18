@@ -1,13 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from 'react';
+import { useAuth, AuthProvider } from '@/hooks/useAuth';
+import LandingPage from '@/components/LandingPage';
+import AuthPage from '@/components/AuthPage';
+import Dashboard from '@/components/Dashboard';
+
+const AppContent = () => {
+  const [showAuth, setShowAuth] = useState(false);
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen ayurvedic-gradient flex items-center justify-center">
+        <div className="neumorphic p-8 rounded-full">
+          <span className="text-4xl">🪷</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Dashboard />;
+  }
+
+  if (showAuth) {
+    return <AuthPage onBack={() => setShowAuth(false)} />;
+  }
+
+  return <LandingPage onGetStarted={() => setShowAuth(true)} />;
+};
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

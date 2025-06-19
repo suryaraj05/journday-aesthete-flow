@@ -1,12 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { ChevronLeft, CalendarDays, TrendingUp, BookOpen, Target } from 'lucide-react';
+import { LocalAIService } from '@/services/localAIService';
+import { ChevronLeft, CalendarDays, TrendingUp, BookOpen, Target, Brain, Heart } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface JournalEntry {
   id: string;
@@ -15,6 +17,8 @@ interface JournalEntry {
   content: string;
   date: string;
   timestamp: any;
+  emotionScale: number;
+  wordCount: number;
 }
 
 interface JournalReflectionProps {
@@ -40,8 +44,11 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
     completedDays: 0,
     averageWordsPerEntry: 0,
     mostActiveSession: '',
-    totalWords: 0
+    totalWords: 0,
+    averageEmotion: 0,
+    emotionTrend: 'stable' as 'improving' | 'declining' | 'stable'
   });
+  const [aiInsights, setAiInsights] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -71,12 +78,15 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
           sessionTitle: sessionConfig[data.sessionId as keyof typeof sessionConfig]?.title || data.sessionId,
           content: data.content,
           date: data.date,
-          timestamp: data.timestamp
+          timestamp: data.timestamp,
+          emotionScale: data.emotionScale || 3,
+          wordCount: data.wordCount || 0
         });
       });
 
       setEntries(fetchedEntries);
       calculateAnalytics(fetchedEntries);
+      generateAIInsights(fetchedEntries);
     } catch (error) {
       console.error('Error fetching entries:', error);
     } finally {
@@ -86,13 +96,16 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
 
   const calculateAnalytics = (entriesData: JournalEntry[]) => {
     const totalEntries = entriesData.length;
-    const totalWords = entriesData.reduce((sum, entry) => sum + entry.content.split(' ').length, 0);
+    const totalWords = entriesData.reduce((sum, entry) => sum + (entry.wordCount || 0), 0);
     const averageWordsPerEntry = totalEntries > 0 ? Math.round(totalWords / totalEntries) : 0;
+    
+    // Calculate emotion analytics
+    const emotionPattern = LocalAIService.analyzeEmotionPatterns(entriesData);
     
     // Calculate unique days
     const uniqueDays = new Set(entriesData.map(entry => entry.date)).size;
     
-    // Calculate most active session
+    // Calculate session counts
     const sessionCounts = entriesData.reduce((acc, entry) => {
       acc[entry.sessionId] = (acc[entry.sessionId] || 0) + 1;
       return acc;
@@ -111,8 +124,15 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
       completedDays: uniqueDays,
       averageWordsPerEntry,
       mostActiveSession: sessionConfig[mostActiveSession as keyof typeof sessionConfig]?.title || '',
-      totalWords
+      totalWords,
+      averageEmotion: emotionPattern.averageEmotion,
+      emotionTrend: emotionPattern.trend
     });
+  };
+
+  const generateAIInsights = (entriesData: JournalEntry[]) => {
+    const insights = LocalAIService.generateWritingInsights(entriesData);
+    setAiInsights(insights);
   };
 
   const calculateStreak = (entriesData: JournalEntry[]) => {
@@ -142,6 +162,33 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
     return entries.filter(entry => entry.date === dateString);
   };
 
+  const getEmotionChartData = () => {
+    const last30Days = entries
+      .filter(entry => {
+        const entryDate = new Date(entry.date);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return entryDate >= thirtyDaysAgo;
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-30);
+
+    return last30Days.map(entry => ({
+      date: new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      emotion: entry.emotionScale,
+      session: entry.sessionId
+    }));
+  };
+
+  const getEmotionDistribution = () => {
+    const distribution = [1, 2, 3, 4, 5].map(emotion => ({
+      emotion: emotion.toString(),
+      count: entries.filter(entry => entry.emotionScale === emotion).length,
+      label: ['Very Sad', 'Sad', 'Neutral', 'Happy', 'Very Happy'][emotion - 1]
+    }));
+    return distribution;
+  };
+
   const selectedDateEntries = getEntriesForDate(selectedDate);
 
   if (loading) {
@@ -153,6 +200,9 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
       </div>
     );
   }
+
+  const emotionChartData = getEmotionChartData();
+  const emotionDistribution = getEmotionDistribution();
 
   return (
     <div className="min-h-screen ayurvedic-gradient lotus-pattern relative overflow-hidden">
@@ -186,8 +236,8 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
           </div>
         </header>
 
-        {/* Analytics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* Enhanced Analytics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           <Card className="card-neumorphic border-none">
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-purple-600 mb-1">{analytics.totalEntries}</div>
@@ -215,7 +265,106 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
               <div className="text-sm text-gray-600">Avg Words</div>
             </CardContent>
           </Card>
+
+          <Card className="card-neumorphic border-none">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-pink-600 mb-1">{analytics.averageEmotion.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">Avg Emotion</div>
+            </CardContent>
+          </Card>
+
+          <Card className="card-neumorphic border-none">
+            <CardContent className="p-4 text-center">
+              <div className={`text-2xl font-bold mb-1 ${
+                analytics.emotionTrend === 'improving' ? 'text-green-600' :
+                analytics.emotionTrend === 'declining' ? 'text-red-600' : 'text-gray-600'
+              }`}>
+                {analytics.emotionTrend === 'improving' ? '📈' : analytics.emotionTrend === 'declining' ? '📉' : '➡️'}
+              </div>
+              <div className="text-sm text-gray-600">Trend</div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Emotion Analytics Charts */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <Card className="card-neumorphic border-none">
+            <CardHeader>
+              <CardTitle className="flex items-center text-gray-800">
+                <Heart className="w-5 h-5 mr-2" />
+                Emotion Trend (Last 30 Days)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={{
+                emotion: { label: "Emotion", color: "hsl(var(--chart-1))" }
+              }} className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={emotionChartData}>
+                    <XAxis dataKey="date" />
+                    <YAxis domain={[1, 5]} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="emotion" 
+                      stroke="hsl(var(--chart-1))" 
+                      strokeWidth={2}
+                      dot={{ fill: "hsl(var(--chart-1))" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="card-neumorphic border-none">
+            <CardHeader>
+              <CardTitle className="flex items-center text-gray-800">
+                <BarChart3 className="w-5 h-5 mr-2" />
+                Emotion Distribution
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={{
+                count: { label: "Count", color: "hsl(var(--chart-2))" }
+              }} className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={emotionDistribution}>
+                    <XAxis dataKey="label" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="count" fill="hsl(var(--chart-2))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* AI Insights */}
+        {aiInsights.length > 0 && (
+          <Card className="card-neumorphic border-none mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center text-gray-800">
+                <Brain className="w-5 h-5 mr-2" />
+                AI-Powered Insights
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                {aiInsights.map((insight, index) => (
+                  <div key={index} className="glassmorphic p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-800 mb-2">{insight.title}</h4>
+                    <p className="text-sm text-gray-600 mb-2">{insight.description}</p>
+                    <div className="text-xs text-gray-500">
+                      Confidence: {Math.round(insight.confidence * 100)}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Calendar */}
@@ -265,14 +414,21 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
             ) : (
               selectedDateEntries.map((entry) => {
                 const session = sessionConfig[entry.sessionId as keyof typeof sessionConfig];
+                const emotion = ['😢', '😞', '😐', '😊', '😄'][entry.emotionScale - 1];
                 return (
                   <Card key={entry.id} className="card-neumorphic border-none">
                     <CardHeader>
-                      <CardTitle className="flex items-center text-gray-800">
-                        <div className={`w-10 h-10 bg-gradient-to-br ${session?.color} rounded-2xl flex items-center justify-center mr-3`}>
-                          <span className="text-lg">{session?.icon}</span>
+                      <CardTitle className="flex items-center justify-between text-gray-800">
+                        <div className="flex items-center">
+                          <div className={`w-10 h-10 bg-gradient-to-br ${session?.color} rounded-2xl flex items-center justify-center mr-3`}>
+                            <span className="text-lg">{session?.icon}</span>
+                          </div>
+                          {entry.sessionTitle}
                         </div>
-                        {entry.sessionTitle}
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">{emotion}</span>
+                          <span className="text-sm text-gray-500">{entry.emotionScale}/5</span>
+                        </div>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -280,7 +436,7 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
                         <p className="text-gray-700 whitespace-pre-wrap">{entry.content}</p>
                       </div>
                       <div className="mt-3 text-xs text-gray-500">
-                        {entry.content.split(' ').length} words
+                        {entry.wordCount} words
                       </div>
                     </CardContent>
                   </Card>

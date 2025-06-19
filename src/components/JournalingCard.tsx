@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { ChevronLeft, Timer, Pause, Play, Save, Focus } from 'lucide-react';
+import { ChevronLeft, Timer, Pause, Play, Save, Focus, Heart } from 'lucide-react';
 
 interface Session {
   id: string;
@@ -22,9 +24,18 @@ interface JournalingCardProps {
   onSave?: () => void;
 }
 
+const emotions = [
+  { id: 1, label: 'Very Sad', emoji: '😢', color: 'text-blue-600' },
+  { id: 2, label: 'Sad', emoji: '😞', color: 'text-blue-500' },
+  { id: 3, label: 'Neutral', emoji: '😐', color: 'text-gray-500' },
+  { id: 4, label: 'Happy', emoji: '😊', color: 'text-green-500' },
+  { id: 5, label: 'Very Happy', emoji: '😄', color: 'text-green-600' }
+];
+
 const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
   const { user } = useAuth();
   const [content, setContent] = useState('');
+  const [emotionScale, setEmotionScale] = useState<number>(3);
   const [isLoading, setIsLoading] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(5 * 60);
@@ -60,6 +71,7 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
       if (entrySnap.exists()) {
         const data = entrySnap.data();
         setContent(data.content || '');
+        setEmotionScale(data.emotionScale || 3);
         setHasExistingEntry(true);
         setExistingEntryId(entryId);
       }
@@ -104,6 +116,7 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
         userId: user.uid,
         sessionId: session.id,
         content: content.trim(),
+        emotionScale: emotionScale,
         date: today,
         timestamp: new Date(),
         wordCount: wordCount,
@@ -174,6 +187,28 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
                 className="min-h-[400px] text-lg leading-relaxed border-none bg-transparent resize-none focus:ring-0 focus:outline-none"
                 autoFocus
               />
+
+              <div className="mb-6">
+                <Label className="text-base font-medium text-gray-700 mb-3 block flex items-center">
+                  <Heart className="w-4 h-4 mr-2" />
+                  How are you feeling right now?
+                </Label>
+                <RadioGroup value={emotionScale.toString()} onValueChange={(value) => setEmotionScale(parseInt(value))}>
+                  <div className="flex justify-between">
+                    {emotions.map((emotion) => (
+                      <div key={emotion.id} className="flex flex-col items-center">
+                        <RadioGroupItem value={emotion.id.toString()} id={`emotion-${emotion.id}`} className="mb-2" />
+                        <Label htmlFor={`emotion-${emotion.id}`} className={`text-2xl mb-1 ${emotion.color}`}>
+                          {emotion.emoji}
+                        </Label>
+                        <Label htmlFor={`emotion-${emotion.id}`} className="text-xs text-center">
+                          {emotion.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </RadioGroup>
+              </div>
 
               <div className="flex justify-between items-center mt-6">
                 <div className="text-sm text-gray-500">
@@ -260,6 +295,28 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
                 placeholder="Take a moment to reflect and write your thoughts..."
                 className="min-h-[300px] text-base leading-relaxed"
               />
+            </div>
+
+            <div className="mb-6">
+              <Label className="text-base font-medium text-gray-700 mb-3 block flex items-center">
+                <Heart className="w-4 h-4 mr-2" />
+                How are you feeling right now?
+              </Label>
+              <RadioGroup value={emotionScale.toString()} onValueChange={(value) => setEmotionScale(parseInt(value))}>
+                <div className="flex justify-between">
+                  {emotions.map((emotion) => (
+                    <div key={emotion.id} className="flex flex-col items-center">
+                      <RadioGroupItem value={emotion.id.toString()} id={`emotion-${emotion.id}`} className="mb-2" />
+                      <Label htmlFor={`emotion-${emotion.id}`} className={`text-2xl mb-1 ${emotion.color}`}>
+                        {emotion.emoji}
+                      </Label>
+                      <Label htmlFor={`emotion-${emotion.id}`} className="text-xs text-center">
+                        {emotion.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </RadioGroup>
             </div>
 
             <div className="flex justify-between items-center">

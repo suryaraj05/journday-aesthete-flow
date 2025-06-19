@@ -77,13 +77,6 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    const savedKey = localStorage.getItem('journday_openai_key');
-    if (savedKey) {
-      setOpenaiApiKey(savedKey);
-    }
-  }, []);
-
-  useEffect(() => {
     if (user) {
       fetchAnalytics();
     }

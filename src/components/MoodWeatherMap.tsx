@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { JournalEntry } from '@/types/journal';
-import { Cloud, Sun, CloudRain, Zap, Snowflake, CloudDrizzle } from 'lucide-react';
+import { Cloud, Sun, CloudRain, Zap, CloudDrizzle } from 'lucide-react';
 
 interface MoodWeatherMapProps {
   entries: JournalEntry[];
@@ -102,13 +102,11 @@ const MoodWeatherMap = ({ entries }: MoodWeatherMapProps) => {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Weather Trend */}
             <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
               <h3 className="font-semibold text-gray-800 mb-2">Weather Forecast</h3>
               <p className="text-lg font-medium text-gray-700">{trend}</p>
             </div>
 
-            {/* Weather Map Grid */}
             <div className="grid grid-cols-7 gap-2 md:gap-3">
               {weatherData.map((day, index) => (
                 <div
@@ -125,7 +123,6 @@ const MoodWeatherMap = ({ entries }: MoodWeatherMapProps) => {
                     })}
                   </div>
                   
-                  {/* Tooltip */}
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
                       {day.description}
@@ -137,7 +134,6 @@ const MoodWeatherMap = ({ entries }: MoodWeatherMapProps) => {
               ))}
             </div>
 
-            {/* Weather Legend */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
               <div className="flex items-center space-x-1">
                 <Sun className="w-4 h-4 text-yellow-500" />
@@ -157,7 +153,7 @@ const MoodWeatherMap = ({ entries }: MoodWeatherMapProps) => {
               </div>
               <div className="flex items-center space-x-1">
                 <Zap className="w-4 h-4 text-purple-600" />
-                <span className="text-gray-600">Stormy (<1.5)</span>
+                <span className="text-gray-600">Stormy (&lt;1.5)</span>
               </div>
             </div>
           </div>

@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { LocalAIService } from '@/services/localAIService';
-import { ChevronLeft, CalendarDays, TrendingUp, BookOpen, Target, Brain, Heart } from 'lucide-react';
+import { ChevronLeft, CalendarDays, TrendingUp, BookOpen, Target, Brain, Heart, BarChart3 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface JournalEntry {
@@ -60,6 +60,7 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
     if (!user) return;
 
     try {
+      console.log('Fetching entries for user:', user.uid);
       const entriesRef = collection(db, 'journalEntries');
       const q = query(
         entriesRef,
@@ -72,6 +73,7 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
       
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+        console.log('Entry data:', data);
         fetchedEntries.push({
           id: doc.id,
           sessionId: data.sessionId,
@@ -80,10 +82,11 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
           date: data.date,
           timestamp: data.timestamp,
           emotionScale: data.emotionScale || 3,
-          wordCount: data.wordCount || 0
+          wordCount: data.wordCount || data.content?.split(' ').length || 0
         });
       });
 
+      console.log('Fetched entries:', fetchedEntries);
       setEntries(fetchedEntries);
       calculateAnalytics(fetchedEntries);
       generateAIInsights(fetchedEntries);
@@ -235,6 +238,11 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
             </div>
           </div>
         </header>
+
+        {/* Debug Info */}
+        <div className="mb-4 p-4 bg-blue-100 rounded-lg">
+          <p className="text-sm text-blue-800">Debug: Found {entries.length} entries for user {user?.email}</p>
+        </div>
 
         {/* Enhanced Analytics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">

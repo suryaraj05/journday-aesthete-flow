@@ -203,7 +203,7 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
   const getEmotionDistribution = () => {
     const distribution = [1, 2, 3, 4, 5].map(emotion => ({
       emotion: emotion.toString(),
-      count: entries.filter(entry => entry.emotionScale === emotion).length,
+      count: entries.filter(entry => Math.round(entry.emotionScale) === emotion).length,
       label: ['Very Sad', 'Sad', 'Neutral', 'Happy', 'Very Happy'][emotion - 1]
     }));
     return distribution;

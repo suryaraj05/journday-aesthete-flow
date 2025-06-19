@@ -4,9 +4,13 @@ import { useAuth } from '@/hooks/useAuth';
 import JournalingCard from './JournalingCard';
 import AyurvedicTip from './AyurvedicTip';
 import JournalReflection from './JournalReflection';
+import GamificationCard from './GamificationCard';
+import ReadingPage from './ReadingPage';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { BookOpen, BarChart3 } from 'lucide-react';
+import { GamificationService } from '@/services/gamificationService';
+import { BookOpen, BarChart3, Book } from 'lucide-react';
+import { JournalEntry } from '@/types/journal';
 
 const journalingSessions = [
   {
@@ -61,6 +65,8 @@ const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [showReflection, setShowReflection] = useState(false);
+  const [showReading, setShowReading] = useState(false);
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [analytics, setAnalytics] = useState({
     totalEntries: 0,
     currentStreak: 0,
@@ -94,18 +100,33 @@ const Dashboard = () => {
       );
       
       const querySnapshot = await getDocs(q);
-      const entries: any[] = [];
+      const fetchedEntries: JournalEntry[] = [];
       
       querySnapshot.forEach((doc) => {
-        entries.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        fetchedEntries.push({
+          id: doc.id,
+          sessionId: data.sessionId,
+          sessionTitle: data.sessionId,
+          content: data.content,
+          date: data.date,
+          timestamp: data.timestamp,
+          emotionScale: data.emotionScale || 3,
+          wordCount: data.wordCount || data.content?.split(' ').length || 0,
+          sleepQuality: data.sleepQuality,
+          energyLevel: data.energyLevel,
+          goals: data.goals || [],
+          isDreamEntry: data.isDreamEntry || false
+        });
       });
 
-      const totalEntries = entries.length;
-      const uniqueDays = new Set(entries.map(entry => entry.date)).size;
+      setEntries(fetchedEntries);
+      const totalEntries = fetchedEntries.length;
+      const uniqueDays = new Set(fetchedEntries.map(entry => entry.date)).size;
       
       // Calculate streak
       const today = new Date().toISOString().split('T')[0];
-      const uniqueDates = [...new Set(entries.map(entry => entry.date))].sort().reverse();
+      const uniqueDates = [...new Set(fetchedEntries.map(entry => entry.date))].sort().reverse();
       
       let streak = 0;
       let currentDate = new Date(today);
@@ -160,13 +181,13 @@ const Dashboard = () => {
     return 0;
   });
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  // Generate gamification data
+  const badges = GamificationService.generateBadges(entries);
+  const achievements = GamificationService.generateAchievements(entries);
+
+  if (showReading) {
+    return <ReadingPage onBack={() => setShowReading(false)} />;
+  }
 
   if (showReflection) {
     return <JournalReflection onBack={() => setShowReflection(false)} />;
@@ -219,6 +240,13 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center space-x-3">
             <Button
+              onClick={() => setShowReading(true)}
+              className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
+            >
+              <Book className="w-4 h-4 mr-2" />
+              Reading
+            </Button>
+            <Button
               onClick={() => setShowReflection(true)}
               className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
             >
@@ -248,70 +276,81 @@ const Dashboard = () => {
           <p className="text-gray-600">Your mindful moments await, embrace each one</p>
         </div>
 
-        {/* Journaling Sessions */}
-        <div className="space-y-4 max-w-2xl mx-auto">
-          {sortedSessions.map((session, index) => {
-            const isActive = session.id === getActiveSession();
-            return (
-              <div
-                key={session.id}
-                className={`card-neumorphic p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
-                  isActive ? 'ring-2 ring-purple-300 transform scale-105 active-session' : ''
-                } ${index === 0 ? 'float-animation' : ''}`}
-                onClick={() => setSelectedSession(session.id)}
-                style={{
-                  animationDelay: index === 0 ? '0s' : `${index * 0.1}s`,
-                }}
-              >
-                <div className="flex items-center space-x-4">
-                  <div className={`w-16 h-16 bg-gradient-to-br ${session.color} rounded-3xl flex items-center justify-center ${isActive ? 'pulse-glow-animation' : ''}`}>
-                    <span className="text-2xl">{session.icon}</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="text-lg font-semibold text-gray-800">{session.title}</h3>
-                      {isActive && (
-                        <div className="flex items-center space-x-1">
-                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                          <span className="text-xs text-green-600 font-medium">Active Now</span>
-                        </div>
-                      )}
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Journaling Sessions */}
+          <div className="lg:col-span-2 space-y-4">
+            {sortedSessions.map((session, index) => {
+              const isActive = session.id === getActiveSession();
+              return (
+                <div
+                  key={session.id}
+                  className={`card-neumorphic p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                    isActive ? 'ring-2 ring-purple-300 transform scale-105 active-session' : ''
+                  } ${index === 0 ? 'float-animation' : ''}`}
+                  onClick={() => setSelectedSession(session.id)}
+                  style={{
+                    animationDelay: index === 0 ? '0s' : `${index * 0.1}s`,
+                  }}
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-16 h-16 bg-gradient-to-br ${session.color} rounded-3xl flex items-center justify-center ${isActive ? 'pulse-glow-animation' : ''}`}>
+                      <span className="text-2xl">{session.icon}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-1">{session.time}</p>
-                    <p className="text-sm text-gray-500">{session.description}</p>
-                  </div>
-                  <div className="text-gray-400 transition-transform hover:scale-125">
-                    <span className="text-xl">→</span>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h3 className="text-lg font-semibold text-gray-800">{session.title}</h3>
+                        {isActive && (
+                          <div className="flex items-center space-x-1">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span className="text-xs text-green-600 font-medium">Active Now</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-1">{session.time}</p>
+                      <p className="text-sm text-gray-500">{session.description}</p>
+                    </div>
+                    <div className="text-gray-400 transition-transform hover:scale-125">
+                      <span className="text-xl">→</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        {/* Enhanced Analytics Preview */}
-        <div className="mt-12 max-w-2xl mx-auto">
-          <div className="card-neumorphic p-6 float-animation" style={{animationDelay: '0.5s'}}>
-            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2" />
-              Your Sacred Journey
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div className="p-4 glassmorphic rounded-lg">
-                <div className="text-2xl font-bold text-purple-600 mb-1">{analytics.currentStreak}</div>
-                <div className="text-sm text-gray-600">Day Streak</div>
-              </div>
-              <div className="p-4 glassmorphic rounded-lg">
-                <div className="text-2xl font-bold text-blue-600 mb-1">{analytics.totalEntries}</div>
-                <div className="text-sm text-gray-600">Total Entries</div>
-              </div>
-              <div className="p-4 glassmorphic rounded-lg">
-                <div className="text-2xl font-bold text-green-600 mb-1">{analytics.completedDays}</div>
-                <div className="text-sm text-gray-600">Active Days</div>
-              </div>
-              <div className="p-4 glassmorphic rounded-lg">
-                <div className="text-2xl font-bold text-orange-600 mb-1">{analytics.consistencyRate}%</div>
-                <div className="text-sm text-gray-600">Consistency</div>
+          {/* Gamification Sidebar */}
+          <div className="space-y-6">
+            <GamificationCard
+              currentStreak={analytics.currentStreak}
+              badges={badges}
+              achievements={achievements}
+              totalEntries={analytics.totalEntries}
+            />
+
+            {/* Enhanced Analytics Preview */}
+            <div className="card-neumorphic p-6 float-animation" style={{animationDelay: '0.5s'}}>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <BarChart3 className="w-5 h-5 mr-2" />
+                Your Sacred Journey
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="p-4 glassmorphic rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600 mb-1">{analytics.currentStreak}</div>
+                  <div className="text-sm text-gray-600">Day Streak</div>
+                </div>
+                <div className="p-4 glassmorphic rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600 mb-1">{analytics.totalEntries}</div>
+                  <div className="text-sm text-gray-600">Total Entries</div>
+                </div>
+                <div className="p-4 glassmorphic rounded-lg">
+                  <div className="text-2xl font-bold text-green-600 mb-1">{analytics.completedDays}</div>
+                  <div className="text-sm text-gray-600">Active Days</div>
+                </div>
+                <div className="p-4 glassmorphic rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600 mb-1">{analytics.consistencyRate}%</div>
+                  <div className="text-sm text-gray-600">Consistency</div>
+                </div>
               </div>
             </div>
           </div>

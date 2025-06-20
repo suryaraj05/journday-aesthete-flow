@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,22 +17,7 @@ import CircadianWellness from './CircadianWellness';
 import MoodWeatherMap from './MoodWeatherMap';
 import { ChevronLeft, CalendarDays, TrendingUp, BookOpen, Target, Brain, Heart, BarChart3, Trophy, Sun, Cloud } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { JournalEntry } from '@/types/journal';
-
-interface JournalEntry {
-  id: string;
-  sessionId: string;
-  sessionTitle: string;
-  content: string;
-  date: string;
-  timestamp: any;
-  emotionScale: number;
-  wordCount: number;
-  sleepQuality: number;
-  energyLevel: number;
-  goals: string[];
-  isDreamEntry: boolean;
-}
+import { JournalEntry as JournalEntryType } from '@/types/journal';
 
 interface JournalReflectionProps {
   onBack: () => void;
@@ -47,7 +33,7 @@ const sessionConfig = {
 
 const JournalReflection = ({ onBack }: JournalReflectionProps) => {
   const { user } = useAuth();
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [entries, setEntries] = useState<JournalEntryType[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState({
@@ -82,7 +68,7 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
       );
       
       const querySnapshot = await getDocs(q);
-      const fetchedEntries: JournalEntry[] = [];
+      const fetchedEntries: JournalEntryType[] = [];
       
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -114,7 +100,7 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
     }
   };
 
-  const calculateAnalytics = (entriesData: JournalEntry[]) => {
+  const calculateAnalytics = (entriesData: JournalEntryType[]) => {
     const totalEntries = entriesData.length;
     const totalWords = entriesData.reduce((sum, entry) => sum + (entry.wordCount || 0), 0);
     const averageWordsPerEntry = totalEntries > 0 ? Math.round(totalWords / totalEntries) : 0;
@@ -150,12 +136,12 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
     });
   };
 
-  const generateAIInsights = (entriesData: JournalEntry[]) => {
+  const generateAIInsights = (entriesData: JournalEntryType[]) => {
     const insights = LocalAIService.generateWritingInsights(entriesData);
     setAiInsights(insights);
   };
 
-  const calculateStreak = (entriesData: JournalEntry[]) => {
+  const calculateStreak = (entriesData: JournalEntryType[]) => {
     if (entriesData.length === 0) return 0;
     
     const today = new Date().toISOString().split('T')[0];
@@ -498,9 +484,9 @@ const JournalReflection = ({ onBack }: JournalReflectionProps) => {
                   </div>
                   <div className="text-center">
                     <div className="text-3xl font-bold text-purple-600 mb-2">
-                      {writingDNA.emotionalRange.toFixed(1)}
+                      {Math.max(1, Math.min(5, writingDNA.emotionalRange)).toFixed(1)}
                     </div>
-                    <div className="text-sm text-gray-600">Emotional Range</div>
+                    <div className="text-sm text-gray-600">Emotional Range (1-5)</div>
                   </div>
                   <div className="text-center">
                     <div className={`text-3xl font-bold mb-2 ${

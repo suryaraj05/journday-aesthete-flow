@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, BookOpen, Brain, Lotus, Mountain, Heart, Star } from 'lucide-react';
+import { ChevronLeft, BookOpen, Brain, Mountain, Heart, Star } from 'lucide-react';
 
 interface ReadingPageProps {
   onBack: () => void;
@@ -77,7 +77,7 @@ const ReadingPage = ({ onBack }: ReadingPageProps) => {
     {
       title: 'Ayurvedic Daily Rhythms',
       content: 'Aligning with natural cycles - rising with the sun, eating at regular times, and winding down with sunset - supports your body\'s innate wisdom.',
-      icon: <Lotus className="w-6 h-6 text-green-500" />
+      icon: <BookOpen className="w-6 h-6 text-green-500" />
     },
     {
       title: 'Yoga Philosophy',
@@ -231,7 +231,7 @@ const ReadingPage = ({ onBack }: ReadingPageProps) => {
             <Card className="card-neumorphic border-none">
               <CardHeader>
                 <CardTitle className="flex items-center text-gray-800">
-                  <Lotus className="w-6 h-6 mr-2" />
+                  <BookOpen className="w-6 h-6 mr-2" />
                   Ayurvedic Principles for Daily Life
                 </CardTitle>
               </CardHeader>

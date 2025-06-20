@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,10 +7,12 @@ import AyurvedicTip from './AyurvedicTip';
 import JournalReflection from './JournalReflection';
 import GamificationCard from './GamificationCard';
 import ReadingPage from './ReadingPage';
+import ManifestationGuide from './ManifestationGuide';
+import WeeklyLetter from './WeeklyLetter';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { GamificationService } from '@/services/gamificationService';
-import { BookOpen, BarChart3, Book } from 'lucide-react';
+import { BookOpen, BarChart3, Book, Mail } from 'lucide-react';
 import { JournalEntry } from '@/types/journal';
 
 const journalingSessions = [
@@ -66,6 +69,8 @@ const Dashboard = () => {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [showReflection, setShowReflection] = useState(false);
   const [showReading, setShowReading] = useState(false);
+  const [showManifestation, setShowManifestation] = useState(false);
+  const [showWeeklyLetter, setShowWeeklyLetter] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [analytics, setAnalytics] = useState({
     totalEntries: 0,
@@ -85,8 +90,64 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       fetchAnalytics();
+      checkManifestationTime();
+      checkWeeklyLetterTime();
     }
   }, [user]);
+
+  const checkManifestationTime = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    // Show manifestation in morning (6-11 AM) or evening (7:30-11 PM)
+    const isMorningTime = hour >= 6 && hour < 12;
+    const isEveningTime = hour >= 19 && hour < 23;
+    
+    if (isMorningTime || isEveningTime) {
+      const dismissed = localStorage.getItem('manifestationDismissed');
+      if (!dismissed || new Date(dismissed) <= now) {
+        setShowManifestation(true);
+      }
+    }
+  };
+
+  const checkWeeklyLetterTime = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
+    
+    // Show on weekends (Saturday or Sunday)
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      const lastShown = localStorage.getItem('weeklyLetterLastShown');
+      const thisWeek = getWeekKey(now);
+      
+      if (lastShown !== thisWeek) {
+        // Check if user has entries this week
+        if (entries.length > 0) {
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          const hasRecentEntries = entries.some(entry => 
+            new Date(entry.date) >= weekAgo
+          );
+          
+          if (hasRecentEntries) {
+            setShowWeeklyLetter(true);
+          }
+        }
+      }
+    }
+  };
+
+  const getWeekKey = (date: Date): string => {
+    const year = date.getFullYear();
+    const week = Math.ceil(((date.getTime() - new Date(year, 0, 1).getTime()) / 86400000 + 1) / 7);
+    return `${year}-W${week}`;
+  };
+
+  const handleWeeklyLetterClose = () => {
+    setShowWeeklyLetter(false);
+    const now = new Date();
+    localStorage.setItem('weeklyLetterLastShown', getWeekKey(now));
+  };
 
   const fetchAnalytics = async () => {
     if (!user) return;
@@ -154,6 +215,14 @@ const Dashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   const getCurrentHour = () => {
     return currentTime.getHours();
   };
@@ -185,6 +254,10 @@ const Dashboard = () => {
   const badges = GamificationService.generateBadges(entries);
   const achievements = GamificationService.generateAchievements(entries);
 
+  if (showWeeklyLetter) {
+    return <WeeklyLetter onClose={handleWeeklyLetterClose} />;
+  }
+
   if (showReading) {
     return <ReadingPage onBack={() => setShowReading(false)} />;
   }
@@ -209,6 +282,11 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen ayurvedic-gradient lotus-pattern relative overflow-hidden">
+      {/* Manifestation Guide Overlay */}
+      {showManifestation && (
+        <ManifestationGuide onDismiss={() => setShowManifestation(false)} />
+      )}
+
       {/* Enhanced Background Elements */}
       <div className="floating-orbs">
         <div className="floating-orb"></div>
@@ -239,6 +317,13 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
+            <Button
+              onClick={() => setShowWeeklyLetter(true)}
+              className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Letter
+            </Button>
             <Button
               onClick={() => setShowReading(true)}
               className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"

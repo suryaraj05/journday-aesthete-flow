@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,11 +8,13 @@ import GamificationCard from './GamificationCard';
 import ReadingPage from './ReadingPage';
 import WeeklyLetter from './WeeklyLetter';
 import ManifestationPage from './ManifestationPage';
+import MyGoals from './MyGoals';
 import InstallPrompt from './InstallPrompt';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { GamificationService } from '@/services/gamificationService';
-import { BookOpen, BarChart3, Book, Mail, Target } from 'lucide-react';
+import { NotificationService } from '@/services/notificationService';
+import { BookOpen, BarChart3, Book, Mail, Target, Goal } from 'lucide-react';
 import { JournalEntry } from '@/types/journal';
 
 const journalingSessions = [
@@ -71,6 +72,7 @@ const Dashboard = () => {
   const [showReflection, setShowReflection] = useState(false);
   const [showReading, setShowReading] = useState(false);
   const [showManifestation, setShowManifestation] = useState(false);
+  const [showMyGoals, setShowMyGoals] = useState(false);
   const [showWeeklyLetter, setShowWeeklyLetter] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [analytics, setAnalytics] = useState({
@@ -92,8 +94,14 @@ const Dashboard = () => {
     if (user) {
       fetchAnalytics();
       checkWeeklyLetterTime();
+      setupNotifications();
     }
   }, [user]);
+
+  const setupNotifications = async () => {
+    // Request notification permission and set up reminders
+    await NotificationService.scheduleJournalingReminders();
+  };
 
   const checkManifestationTime = () => {
     const now = new Date();
@@ -258,6 +266,10 @@ const Dashboard = () => {
     return <WeeklyLetter onClose={handleWeeklyLetterClose} />;
   }
 
+  if (showMyGoals) {
+    return <MyGoals onBack={() => setShowMyGoals(false)} />;
+  }
+
   if (showManifestation) {
     return <ManifestationPage onBack={() => setShowManifestation(false)} />;
   }
@@ -325,6 +337,13 @@ const Dashboard = () => {
             >
               <Mail className="w-4 h-4 mr-2" />
               Letter
+            </Button>
+            <Button
+              onClick={() => setShowMyGoals(true)}
+              className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
+            >
+              <Goal className="w-4 h-4 mr-2" />
+              My Goals
             </Button>
             <Button
               onClick={() => setShowManifestation(true)}

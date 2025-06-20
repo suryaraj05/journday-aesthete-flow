@@ -7,12 +7,17 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#8B5CF6",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["health", "lifestyle", "productivity"],
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/favicon.ico",
       "sizes": "48x48",
-      "type": "image/x-icon"
+      "type": "image/x-icon",
+      "purpose": "any"
     },
     {
       "src": "/placeholder.svg",
@@ -26,8 +31,5 @@
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ],
-  "categories": ["health", "lifestyle", "productivity"],
-  "lang": "en",
-  "dir": "ltr"
+  ]
 }

@@ -8,8 +8,10 @@ interface LandingPageProps {
 const LandingPage = ({ onGetStarted }: LandingPageProps) => {
   return (
     <div className="min-h-screen ayurvedic-gradient lotus-pattern relative overflow-hidden">
-      {/* Floating Orbs Background */}
+      {/* Enhanced Floating Orbs Background */}
       <div className="floating-orbs">
+        <div className="floating-orb"></div>
+        <div className="floating-orb"></div>
         <div className="floating-orb"></div>
         <div className="floating-orb"></div>
         <div className="floating-orb"></div>
@@ -19,16 +21,39 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
       {/* Sacred Geometry Pattern */}
       <div className="sacred-geometry"></div>
 
-      {/* Meditation Ripples */}
+      {/* Enhanced Meditation Ripples */}
       <div className="meditation-ripples"></div>
+      <div className="meditation-ripples" style={{top: '30%', left: '20%', animationDelay: '1s'}}></div>
+      <div className="meditation-ripples" style={{top: '70%', right: '15%', animationDelay: '2s'}}></div>
 
-      {/* Floating decorative elements */}
+      {/* Enhanced floating decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl float-animation shimmer-animation"></div>
         <div className="absolute top-40 right-20 w-24 h-24 bg-purple-200/20 rounded-full blur-lg drift-animation" style={{animationDelay: '1s'}}></div>
         <div className="absolute bottom-40 left-1/4 w-20 h-20 bg-pink-200/15 rounded-full blur-md float-animation" style={{animationDelay: '2s'}}></div>
         <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-yellow-200/10 rounded-full blur-lg drift-animation" style={{animationDelay: '3s'}}></div>
         <div className="absolute bottom-1/3 right-1/4 w-28 h-28 bg-blue-200/15 rounded-full blur-xl shimmer-animation" style={{animationDelay: '4s'}}></div>
+        
+        {/* Additional mystical elements */}
+        <div className="absolute top-16 right-1/4 w-12 h-12 bg-gradient-to-r from-purple-300/20 to-pink-300/20 rounded-full blur-sm float-animation" style={{animationDelay: '5s'}}></div>
+        <div className="absolute bottom-20 left-1/3 w-18 h-18 bg-gradient-to-r from-amber-300/15 to-orange-300/15 rounded-full blur-lg drift-animation" style={{animationDelay: '6s'}}></div>
+        <div className="absolute top-1/2 left-10 w-14 h-14 bg-gradient-to-r from-emerald-300/20 to-teal-300/20 rounded-full blur-md shimmer-animation" style={{animationDelay: '7s'}}></div>
+      </div>
+
+      {/* Mystical particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white/30 rounded-full"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`
+            }}
+          />
+        ))}
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-16">

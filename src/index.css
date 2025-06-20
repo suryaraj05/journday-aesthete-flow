@@ -114,7 +114,8 @@
   background: 
     radial-gradient(circle at 20% 50%, rgba(255, 183, 197, 0.3) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(196, 181, 253, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 40% 80%, rgba(147, 197, 253, 0.3) 0%, transparent 50%);
+    radial-gradient(circle at 40% 80%, rgba(147, 197, 253, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 60% 40%, rgba(255, 228, 230, 0.2) 0%, transparent 40%);
   animation: breathe 8s ease-in-out infinite;
   z-index: 1;
 }
@@ -214,6 +215,12 @@
   50% { box-shadow: 0 0 40px rgba(196, 181, 253, 0.6), 0 0 60px rgba(196, 181, 253, 0.3); }
 }
 
+@keyframes mystical-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 0.6; }
+  33% { transform: translateY(-20px) rotate(120deg) scale(1.1); opacity: 0.8; }
+  66% { transform: translateY(-10px) rotate(240deg) scale(0.9); opacity: 0.7; }
+}
+
 .float-animation {
   animation: float 6s ease-in-out infinite;
 }
@@ -230,20 +237,25 @@
   animation: pulse-glow 4s ease-in-out infinite;
 }
 
+.mystical-float-animation {
+  animation: mystical-float 8s ease-in-out infinite;
+}
+
 .lotus-pattern {
   background-image: 
     radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
-    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 60px 60px, 40px 40px;
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at 50% 50%, rgba(196, 181, 253, 0.05) 3px, transparent 3px);
+  background-size: 60px 60px, 40px 40px, 80px 80px;
   animation: lotus-drift 30s linear infinite;
 }
 
 @keyframes lotus-drift {
-  0% { background-position: 0% 0%, 0% 0%; }
-  100% { background-position: 100% 100%, -100% -100%; }
+  0% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+  100% { background-position: 100% 100%, -100% -100%, 50% 50%; }
 }
 
-/* Floating Orbs */
+/* Enhanced Floating Orbs */
 .floating-orbs {
   position: absolute;
   width: 100%;
@@ -257,7 +269,7 @@
   border-radius: 50%;
   background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   backdrop-filter: blur(10px);
-  animation: float 8s ease-in-out infinite;
+  animation: mystical-float 8s ease-in-out infinite;
 }
 
 .floating-orb:nth-child(1) {
@@ -267,6 +279,7 @@
   left: 10%;
   animation-delay: 0s;
   animation-duration: 8s;
+  background: linear-gradient(45deg, rgba(255, 183, 197, 0.2), rgba(255, 183, 197, 0.1));
 }
 
 .floating-orb:nth-child(2) {
@@ -276,6 +289,7 @@
   right: 15%;
   animation-delay: 2s;
   animation-duration: 12s;
+  background: linear-gradient(45deg, rgba(196, 181, 253, 0.2), rgba(196, 181, 253, 0.1));
 }
 
 .floating-orb:nth-child(3) {
@@ -285,6 +299,7 @@
   left: 30%;
   animation-delay: 4s;
   animation-duration: 10s;
+  background: linear-gradient(45deg, rgba(147, 197, 253, 0.2), rgba(147, 197, 253, 0.1));
 }
 
 .floating-orb:nth-child(4) {
@@ -294,9 +309,30 @@
   right: 40%;
   animation-delay: 6s;
   animation-duration: 14s;
+  background: linear-gradient(45deg, rgba(255, 228, 230, 0.2), rgba(255, 228, 230, 0.1));
 }
 
-/* Sacred Geometry Patterns */
+.floating-orb:nth-child(5) {
+  width: 100px;
+  height: 100px;
+  top: 70%;
+  left: 60%;
+  animation-delay: 8s;
+  animation-duration: 16s;
+  background: linear-gradient(45deg, rgba(246, 211, 101, 0.2), rgba(246, 211, 101, 0.1));
+}
+
+.floating-orb:nth-child(6) {
+  width: 70px;
+  height: 70px;
+  top: 20%;
+  left: 70%;
+  animation-delay: 10s;
+  animation-duration: 18s;
+  background: linear-gradient(45deg, rgba(167, 243, 208, 0.2), rgba(167, 243, 208, 0.1));
+}
+
+/* Enhanced Sacred Geometry Patterns */
 .sacred-geometry {
   position: absolute;
   top: 0;
@@ -305,8 +341,10 @@
   height: 100%;
   opacity: 0.1;
   background-image: 
-    radial-gradient(circle at 50% 50%, transparent 40%, rgba(196, 181, 253, 0.1) 41%, rgba(196, 181, 253, 0.1) 45%, transparent 46%);
-  background-size: 200px 200px;
+    radial-gradient(circle at 50% 50%, transparent 40%, rgba(196, 181, 253, 0.1) 41%, rgba(196, 181, 253, 0.1) 45%, transparent 46%),
+    radial-gradient(circle at 25% 25%, transparent 20%, rgba(255, 183, 197, 0.08) 21%, rgba(255, 183, 197, 0.08) 25%, transparent 26%),
+    radial-gradient(circle at 75% 75%, transparent 30%, rgba(147, 197, 253, 0.08) 31%, rgba(147, 197, 253, 0.08) 35%, transparent 36%);
+  background-size: 200px 200px, 150px 150px, 180px 180px;
   animation: sacred-rotation 60s linear infinite;
 }
 
@@ -315,7 +353,7 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Meditation ripples */
+/* Enhanced meditation ripples */
 .meditation-ripples {
   position: absolute;
   top: 50%;
@@ -341,6 +379,7 @@
 
 .meditation-ripples::after {
   animation-delay: 2s;
+  border-color: rgba(255, 183, 197, 0.3);
 }
 
 @keyframes ripple {

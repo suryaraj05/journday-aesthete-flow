@@ -59,7 +59,6 @@ export class NotificationService {
         body,
         icon: '/favicon.ico',
         badge: '/favicon.ico',
-        vibrate: [200, 100, 200],
         data: { url: '/' }
       });
     }

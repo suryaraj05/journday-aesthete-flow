@@ -7,13 +7,13 @@ import AyurvedicTip from './AyurvedicTip';
 import JournalReflection from './JournalReflection';
 import GamificationCard from './GamificationCard';
 import ReadingPage from './ReadingPage';
-import ManifestationGuide from './ManifestationGuide';
 import WeeklyLetter from './WeeklyLetter';
+import ManifestationPage from './ManifestationPage';
 import InstallPrompt from './InstallPrompt';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { GamificationService } from '@/services/gamificationService';
-import { BookOpen, BarChart3, Book, Mail } from 'lucide-react';
+import { BookOpen, BarChart3, Book, Mail, Target } from 'lucide-react';
 import { JournalEntry } from '@/types/journal';
 
 const journalingSessions = [
@@ -91,7 +91,6 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       fetchAnalytics();
-      checkManifestationTime();
       checkWeeklyLetterTime();
     }
   }, [user]);
@@ -259,6 +258,10 @@ const Dashboard = () => {
     return <WeeklyLetter onClose={handleWeeklyLetterClose} />;
   }
 
+  if (showManifestation) {
+    return <ManifestationPage onBack={() => setShowManifestation(false)} />;
+  }
+
   if (showReading) {
     return <ReadingPage onBack={() => setShowReading(false)} />;
   }
@@ -285,11 +288,6 @@ const Dashboard = () => {
     <div className="min-h-screen ayurvedic-gradient lotus-pattern relative overflow-hidden">
       {/* Install Prompt */}
       <InstallPrompt />
-
-      {/* Manifestation Guide Overlay */}
-      {showManifestation && (
-        <ManifestationGuide onDismiss={() => setShowManifestation(false)} />
-      )}
 
       {/* Enhanced Background Elements */}
       <div className="floating-orbs">
@@ -327,6 +325,13 @@ const Dashboard = () => {
             >
               <Mail className="w-4 h-4 mr-2" />
               Letter
+            </Button>
+            <Button
+              onClick={() => setShowManifestation(true)}
+              className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
+            >
+              <Target className="w-4 h-4 mr-2" />
+              Manifestation
             </Button>
             <Button
               onClick={() => setShowReading(true)}

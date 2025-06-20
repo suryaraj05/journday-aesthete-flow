@@ -9,6 +9,7 @@ import GamificationCard from './GamificationCard';
 import ReadingPage from './ReadingPage';
 import ManifestationGuide from './ManifestationGuide';
 import WeeklyLetter from './WeeklyLetter';
+import InstallPrompt from './InstallPrompt';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { GamificationService } from '@/services/gamificationService';
@@ -282,6 +283,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen ayurvedic-gradient lotus-pattern relative overflow-hidden">
+      {/* Install Prompt */}
+      <InstallPrompt />
+
       {/* Manifestation Guide Overlay */}
       {showManifestation && (
         <ManifestationGuide onDismiss={() => setShowManifestation(false)} />

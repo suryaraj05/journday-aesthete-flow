@@ -8,6 +8,13 @@
     <meta name="description" content="A beautiful journaling app with Ayurvedic wisdom and mindful practices" />
     <meta name="author" content="JournDay" />
 
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#8B5CF6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="JournDay" />
+    <link rel="manifest" href="/manifest.json" />
+
     <meta property="og:title" content="JournDay - Mindful Journaling" />
     <meta property="og:description" content="A beautiful journaling app with Ayurvedic wisdom and mindful practices" />
     <meta property="og:type" content="website" />
@@ -25,5 +32,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

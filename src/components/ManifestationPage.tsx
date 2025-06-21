@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -105,7 +104,7 @@ const ManifestationPage = ({ onBack }: ManifestationPageProps) => {
         <div className="flex items-center mb-8">
           <Button
             onClick={onBack}
-            className="button-neumorphic mr-4 hover:scale-105 transition-transform"
+            className="button-neumorphic mr-4 hover:scale-105 transition-transform text-gray-800 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back

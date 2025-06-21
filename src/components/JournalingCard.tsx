@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { ChevronLeft, Timer, Pause, Play, Save, Focus, Heart } from 'lucide-react';
+import { ChevronLeft, Timer, Pause, Play, Save, Focus, Heart, CheckSquare, Plus, Trash2 } from 'lucide-react';
 
 interface Session {
   id: string;
@@ -22,6 +23,12 @@ interface JournalingCardProps {
   session: Session;
   onBack: () => void;
   onSave?: () => void;
+}
+
+interface TodoItem {
+  id: string;
+  text: string;
+  completed: boolean;
 }
 
 const emotions = [
@@ -42,9 +49,18 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [hasExistingEntry, setHasExistingEntry] = useState(false);
   const [existingEntryId, setExistingEntryId] = useState<string | null>(null);
+  
+  // Todo functionality
+  const [todosEnabled, setTodosEnabled] = useState(false);
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [newTodoText, setNewTodoText] = useState('');
+  const [todosFromMorning, setTodosFromMorning] = useState<TodoItem[]>([]);
 
   useEffect(() => {
     loadExistingEntry();
+    if (session.id === 'evening') {
+      loadMorningTodos();
+    }
   }, [session.id, user]);
 
   useEffect(() => {
@@ -59,6 +75,26 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
     return () => clearInterval(interval);
   }, [isTimerRunning, timerSeconds]);
 
+  const loadMorningTodos = async () => {
+    if (!user) return;
+    
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const morningEntryId = `${user.uid}_morning_${today}`;
+      const entryRef = doc(db, 'journalEntries', morningEntryId);
+      const entrySnap = await getDoc(entryRef);
+
+      if (entrySnap.exists()) {
+        const data = entrySnap.data();
+        if (data.todos && data.todosEnabled) {
+          setTodosFromMorning(data.todos);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading morning todos:', error);
+    }
+  };
+
   const loadExistingEntry = async () => {
     if (!user) return;
 
@@ -72,6 +108,8 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
         const data = entrySnap.data();
         setContent(data.content || '');
         setEmotionScale(data.emotionScale || 3);
+        setTodosEnabled(data.todosEnabled || false);
+        setTodos(data.todos || []);
         setHasExistingEntry(true);
         setExistingEntryId(entryId);
       }
@@ -120,7 +158,9 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
         date: today,
         timestamp: new Date(),
         wordCount: wordCount,
-        characterCount: characterCount
+        characterCount: characterCount,
+        todosEnabled: todosEnabled,
+        todos: todos
       };
 
       if (hasExistingEntry && existingEntryId) {
@@ -141,6 +181,39 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getUpdatedPrompt = () => {
+    if (session.id === 'morning' && todosEnabled) {
+      return "What's my top goal today? How will I overcome one obstacle? What are my key tasks for today?";
+    }
+    if (session.id === 'evening' && todosFromMorning.length > 0) {
+      const completedCount = todosFromMorning.filter(todo => todo.completed).length;
+      return `What went well today? What can I improve tomorrow? How many of today's tasks did I complete? (${completedCount}/${todosFromMorning.length} completed)`;
+    }
+    return session.prompt;
+  };
+
+  const addTodo = () => {
+    if (newTodoText.trim()) {
+      const newTodo: TodoItem = {
+        id: Date.now().toString(),
+        text: newTodoText.trim(),
+        completed: false
+      };
+      setTodos([...todos, newTodo]);
+      setNewTodoText('');
+    }
+  };
+
+  const toggleTodo = (id: string) => {
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  const deleteTodo = (id: string) => {
+    setTodos(todos.filter(todo => todo.id !== id));
   };
 
   if (isFocusMode) {
@@ -281,9 +354,95 @@ const JournalingCard = ({ session, onBack, onSave }: JournalingCardProps) => {
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-3">Reflection Prompt</h2>
               <div className="glassmorphic p-4 rounded-lg">
-                <p className="text-gray-700 italic">"{session.prompt}"</p>
+                <p className="text-gray-700 italic">"{getUpdatedPrompt()}"</p>
               </div>
             </div>
+
+            {/* Todo Section for Morning Intention */}
+            {session.id === 'morning' && (
+              <div className="mb-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <CheckSquare className="w-5 h-5 text-purple-600" />
+                  <Label className="text-base font-medium text-gray-700">Daily Tasks</Label>
+                  <Switch
+                    checked={todosEnabled}
+                    onCheckedChange={setTodosEnabled}
+                  />
+                  <span className="text-sm text-gray-600">
+                    {todosEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+
+                {todosEnabled && (
+                  <div className="glassmorphic p-4 rounded-lg space-y-3">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={newTodoText}
+                        onChange={(e) => setNewTodoText(e.target.value)}
+                        placeholder="Add a task for today..."
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+                      />
+                      <Button onClick={addTodo} className="px-3 py-2">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {todos.map((todo) => (
+                        <div key={todo.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={todo.completed}
+                            onChange={() => toggleTodo(todo.id)}
+                            className="rounded focus:ring-purple-500"
+                          />
+                          <span className={`flex-1 ${todo.completed ? 'line-through text-gray-500' : 'text-gray-700'}`}>
+                            {todo.text}
+                          </span>
+                          <Button
+                            onClick={() => deleteTodo(todo.id)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Todo Review for Evening Reflection */}
+            {session.id === 'evening' && todosFromMorning.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                  <CheckSquare className="w-5 h-5 mr-2 text-purple-600" />
+                  Today's Task Review
+                </h3>
+                <div className="glassmorphic p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-3">
+                    Completed {todosFromMorning.filter(todo => todo.completed).length} of {todosFromMorning.length} tasks
+                  </p>
+                  <div className="space-y-2">
+                    {todosFromMorning.map((todo) => (
+                      <div key={todo.id} className="flex items-center space-x-2">
+                        <span className={`w-4 h-4 ${todo.completed ? 'text-green-500' : 'text-gray-400'}`}>
+                          {todo.completed ? '✓' : '○'}
+                        </span>
+                        <span className={`${todo.completed ? 'text-green-700' : 'text-gray-500'}`}>
+                          {todo.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -95,7 +96,6 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       fetchAnalytics();
-      checkWeeklyLetterTime();
       setupNotifications();
     }
   }, [user]);
@@ -105,58 +105,10 @@ const Dashboard = () => {
     await NotificationService.scheduleJournalingReminders();
   };
 
-  const checkManifestationTime = () => {
-    const now = new Date();
-    const hour = now.getHours();
-    
-    // Show manifestation in morning (6-11 AM) or evening (7:30-11 PM)
-    const isMorningTime = hour >= 6 && hour < 12;
-    const isEveningTime = hour >= 19 && hour < 23;
-    
-    if (isMorningTime || isEveningTime) {
-      const dismissed = localStorage.getItem('manifestationDismissed');
-      if (!dismissed || new Date(dismissed) <= now) {
-        setShowManifestation(true);
-      }
-    }
-  };
-
-  const checkWeeklyLetterTime = () => {
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
-    
-    // Show on weekends (Saturday or Sunday)
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      const lastShown = localStorage.getItem('weeklyLetterLastShown');
-      const thisWeek = getWeekKey(now);
-      
-      if (lastShown !== thisWeek) {
-        // Check if user has entries this week
-        if (entries.length > 0) {
-          const weekAgo = new Date();
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          const hasRecentEntries = entries.some(entry => 
-            new Date(entry.date) >= weekAgo
-          );
-          
-          if (hasRecentEntries) {
-            setShowWeeklyLetter(true);
-          }
-        }
-      }
-    }
-  };
-
   const getWeekKey = (date: Date): string => {
     const year = date.getFullYear();
     const week = Math.ceil(((date.getTime() - new Date(year, 0, 1).getTime()) / 86400000 + 1) / 7);
     return `${year}-W${week}`;
-  };
-
-  const handleWeeklyLetterClose = () => {
-    setShowWeeklyLetter(false);
-    const now = new Date();
-    localStorage.setItem('weeklyLetterLastShown', getWeekKey(now));
   };
 
   const fetchAnalytics = async () => {
@@ -222,14 +174,6 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error('Error fetching analytics:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Error signing out:', error);
     }
   };
 

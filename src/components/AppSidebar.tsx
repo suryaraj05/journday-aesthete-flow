@@ -69,7 +69,11 @@ export function AppSidebar({ onNavigate, currentPage }: AppSidebarProps) {
       <SidebarHeader className="p-4">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 neumorphic flex items-center justify-center pulse-glow-animation">
-            <span className="text-xl">🪷</span>
+            <img 
+              src="/lovable-uploads/fea06144-508f-49e9-8fdf-15396ad4c3f8.png" 
+              alt="JournDay Logo" 
+              className="w-6 h-6"
+            />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-800">JournDay</h1>

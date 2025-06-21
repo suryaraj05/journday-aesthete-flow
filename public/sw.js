@@ -5,9 +5,7 @@ const urlsToCache = [
   '/static/js/bundle.js',
   '/static/css/main.css',
   '/manifest.json',
-  '/favicon.ico',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/lovable-uploads/fea06144-508f-49e9-8fdf-15396ad4c3f8.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -54,8 +52,8 @@ self.addEventListener('sync', (event) => {
 function showJournalReminder() {
   return self.registration.showNotification('JournDay Reminder', {
     body: 'Time for your mindful journaling session! 🪷',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/lovable-uploads/fea06144-508f-49e9-8fdf-15396ad4c3f8.png',
+    badge: '/lovable-uploads/fea06144-508f-49e9-8fdf-15396ad4c3f8.png',
     data: {
       url: '/'
     }

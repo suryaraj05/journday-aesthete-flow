@@ -14,19 +14,13 @@
   "dir": "ltr",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "48x48",
-      "type": "image/x-icon",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-192.png",
+      "src": "/lovable-uploads/fea06144-508f-49e9-8fdf-15396ad4c3f8.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/lovable-uploads/fea06144-508f-49e9-8fdf-15396ad4c3f8.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

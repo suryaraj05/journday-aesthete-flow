@@ -281,7 +281,11 @@ const Dashboard = () => {
                 </SidebarTrigger>
                 <div className="hidden md:flex items-center space-x-3">
                   <div className="w-12 h-12 neumorphic flex items-center justify-center pulse-glow-animation">
-                    <span className="text-2xl">🪷</span>
+                    <img 
+                      src="/lovable-uploads/fea06144-508f-49e9-8fdf-15396ad4c3f8.png" 
+                      alt="JournDay Logo" 
+                      className="w-8 h-8"
+                    />
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold text-gray-800">JournDay</h1>

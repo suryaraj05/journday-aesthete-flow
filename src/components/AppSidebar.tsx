@@ -1,5 +1,4 @@
-
-import { BookOpen, Book, Mail, Target, Goal, LogOut, Home } from 'lucide-react';
+import { BookOpen, Book, Mail, Target, Goal, LogOut, Home, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -28,6 +27,11 @@ export function AppSidebar({ onNavigate, currentPage }: AppSidebarProps) {
       title: "Dashboard",
       icon: Home,
       action: () => onNavigate('dashboard')
+    },
+    {
+      title: "Guide",
+      icon: HelpCircle,
+      action: () => onNavigate('guide')
     },
     {
       title: "Reflections",

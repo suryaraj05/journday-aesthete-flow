@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,8 +15,9 @@ import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { GamificationService } from '@/services/gamificationService';
 import { NotificationService } from '@/services/notificationService';
-import { BarChart3, Menu } from 'lucide-react';
+import { BarChart3, Menu, BookOpen } from 'lucide-react';
 import { JournalEntry } from '@/types/journal';
+import InteractiveGuide from './InteractiveGuide';
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -78,6 +78,7 @@ const Dashboard = () => {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [showGuide, setShowGuide] = useState(false);
   const [analytics, setAnalytics] = useState({
     totalEntries: 0,
     currentStreak: 0,
@@ -252,6 +253,9 @@ const Dashboard = () => {
         <AppSidebar onNavigate={handleNavigation} currentPage={currentPage} />
         
         <SidebarInset className="flex-1">
+          {/* Show Interactive Guide */}
+          {showGuide && <InteractiveGuide onClose={() => setShowGuide(false)} />}
+
           {/* Install Prompt */}
           <InstallPrompt />
 
@@ -297,6 +301,13 @@ const Dashboard = () => {
               {/* Desktop Navigation - Hidden on mobile */}
               <div className="hidden lg:flex items-center space-x-3">
                 <Button
+                  onClick={() => setShowGuide(true)}
+                  className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
+                >
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Guide
+                </Button>
+                <Button
                   onClick={() => setCurrentPage('weeklyLetter')}
                   className="button-neumorphic text-gray-800 hover:text-gray-900 hover:scale-105 transition-transform"
                 >
@@ -328,6 +339,35 @@ const Dashboard = () => {
                 </Button>
               </div>
             </header>
+
+            {/* Guide Introduction Banner - Show only for new users */}
+            {analytics.totalEntries === 0 && (
+              <div className="mb-6 md:mb-8">
+                <Card className="card-neumorphic border-none bg-gradient-to-r from-purple-100/80 to-pink-100/80">
+                  <CardContent className="p-6 text-center">
+                    <div className="flex items-center justify-center space-x-3 mb-4">
+                      <img 
+                        src="/lovable-uploads/fea06144-508f-49e9-8fdf-15396ad4c3f8.png" 
+                        alt="JournDay" 
+                        className="w-8 h-8"
+                      />
+                      <h3 className="text-xl font-bold text-gray-800">Welcome to Your Sacred Journey</h3>
+                    </div>
+                    <p className="text-gray-600 mb-4">
+                      Discover the power of mindful journaling with our interactive guide. 
+                      Explore all features and learn how to transform your daily practice.
+                    </p>
+                    <Button
+                      onClick={() => setShowGuide(true)}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:scale-105 transition-transform"
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Start Interactive Guide
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Ayurvedic Tip */}
             <AyurvedicTip />
